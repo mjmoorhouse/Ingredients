@@ -5,8 +5,12 @@ List all the CSV files in the directory -printing the CWD on the way past:
 """
 import os
 print ("Current WD: '{}'".format(os.getcwd()))
-#Use a list comprehension to get all the CSV files, then count them:
-CSVList = [x for x in os.listdir() if x.endswith(".csv")]
+#Assume the path to the Data files is in the directory named "./Data"
+dataLocation = os.getcwd()+"\\Data"
+print ("Location of data files: {}".format(dataLocation))
+
+#Use a list comprehension to get all the CSV - hence Data - files, then count them:
+CSVList = [x for x in os.listdir(dataLocation) if x.endswith(".csv")]
 N_CSVFiles = len(CSVList)
 if N_CSVFiles >0:
     print("Are [{0}] Files: {1}".format(len(CSVList), CSVList))
