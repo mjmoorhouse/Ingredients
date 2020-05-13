@@ -4,8 +4,9 @@ cleanRawDownloads.py
 This cleans up the worse of the dross and duplication from the raw scraped data and places them into a 'cleaned'
 directory.  Existing files are not overwritten.
 
-
 The style used is more functional than Object Orientated: the same results could be achieved with (g)awk, sed and cut.
+
+Heavy use of Pandas from the dataframe operations.
 
 """
 import re
@@ -86,10 +87,12 @@ def main():
         # 3) Re-order & retitle columns:
         raw_results_df = raw_results_df[new_column_order]
         raw_results_df.columns = new_column_names
-        # 3) Standardise to "May contain:" in the Allergens columns
-        raw_results_df['Allergens'].apply(Clean_Allergen)
-        # 4) Convert all weights to grams: (kg = g * 1000)
-        raw_results_df['Weight'].apply(Convert_Weight)
+
+        # 4) Standardise to "May contain:" in the Allergens columns
+        raw_results_df['Allergens'] = raw_results_df['Allergens'].apply(Clean_Allergen)
+
+        # 5) Convert all weights to grams: (kg = g * 1000)
+        raw_results_df['Weight'] = raw_results_df['Weight'].apply(Convert_Weight)
 
         #Now save the new file:
         #df.to_csv('new_file.csv', sep='\t', index=False)
