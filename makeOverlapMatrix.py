@@ -21,10 +21,12 @@ def main():
     print("Loading Pandas and dependencies:")
     try:
         import pandas as pd
+        import numpy as np
     except:
         sys.exit("Could not load pandas module - check installation and environment is active")
     #Declare the list storing the IDs explictly.
     IDs_list = []
+    tag_list = list()
     # Set / Test the working directory; stop if it doesn't exist:
     data_location = os.getcwd() + "\\Cleaned"
     if not os.path.isdir(data_location):
@@ -52,6 +54,7 @@ def main():
         # re.compile('(?P<weight>[\d.]+)(?P<units>[kK]*[Gg])')
         c_base_name = re_match.group("tag")
         print("Tag is: '{}'".format(c_base_name))
+        tag_list.append(c_base_name)
         c_file_path = data_location + "\\" + c_file_name
         print("Processing #{0} of {1}\t: '{2}'".format(c_file + 1, num_data_file_list, c_file_name))
 
@@ -74,9 +77,40 @@ def main():
     for x in range (0,len(IDs_list)):
         print ("List {} has {} elements".format(x, len(IDs_list[x])))
 
+    #Do the overlap
+    dist_matrix = np.zeros((num_data_file_list,num_data_file_list),dtype=np.float)
+    #other_frame = pd.DataFrame({'idx':[range(0,num_data_file_list)], 'cols':[range(0,num_data_file_list)]})
+    other_frame = pd.DataFrame(columns = tag_list, index=tag_list)
+    #other_frame.at[1,2]="Text"
+    print (other_frame)
+
+    for x in range(0, len(IDs_list)):
+        for y in range(0, len(IDs_list)):
+            print ("{},{}".format(x,y))
+            print ("len {}, {}".format(len(IDs_list[x]),len(IDs_list[y])))
+            other_frame.at[tag_list[x],tag_list[y]] = Score_List(list(IDs_list[x]), list(IDs_list[y]))
+            #dist_matrix[x][y] = Score_List(list(IDs_list[x]), list(IDs_list[y]))
+    print(other_frame)
+
 def Score_List(list_a, list_b):
+    """
 
+    overlap = setA & setB
+# universe = setA | setB
 
+# total_len = len(listA) + len(listB)
+#
+# d = (2 * len(overlap) / total_len)
+    :param list_a:
+    :param list_b:
+    :return:
+    """
+    setA = set(list_a)
+    setB = set(list_b)
+    overlap = setA & setB
+    universe = setA | setB
+    d = 2 * len(overlap) / len(universe)
+    return d
 def Check_Duplicates(data_list):
     """
     Expects a list, returns the number of duplicates found - hence 0 / False if none.
