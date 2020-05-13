@@ -20,14 +20,13 @@ columns_to_drop = ["web-scraper-order", "ProductsonPage",
 new_column_order = ["ID", "name", "ProductsonPage-href", "Ingredients", "Allergens", "weight"]
 new_column_names = ["Product ID", "Product Name", "URL", "Ingredients", "Allergens", "Weight"]
 
-# new_column_order = ["ID", "name", "ProductsonPage-href", "Ingredients", "Allergens", "weight"]
-# new_column_names = ["Product ID", "Product Name", "URL", "Weight", "Ingredients", "Allergens"]
 # Target: https://www.tesco.com/groceries/en-GB/products/305983890 gives $1 = 305983890
 SKU_re = re.compile('\/(\d*)$')
 contains_re = '(also )*([Cc]ontain)s* *(trace)*s* *(of)*:*'
 contains_result_str = 'Contain:'
 delimter_re = '(and )|(\& )'
 delimter_result_str = ', '
+ingrid_re = '(INGREDIENTS):* *'
 
 weight_re = re.compile('(?P<weight>[\d.]+)(?P<units>[kK]*[Gg])')
 
@@ -61,22 +60,21 @@ def main():
 
     # Do something more interesting - or at least pretend to:
     for CFile in range(0, N_CSVFiles):
-        #Build the file paths - including .txt instead of .csv for the output file so it opens in Excel easier
+        # Build the file paths - including .txt instead of .csv for the output file so it opens in Excel easier
         c_file_name = CSVList[CFile]
         c_file_ip_path = dataLocation + "\\" + c_file_name
         c_file_op_path = outdir + "\\" + c_file_name
-        c_file_op_path = re.sub('\.csv$','.txt', c_file_op_path)
+        c_file_op_path = re.sub('\.csv$', '.txt', c_file_op_path)
         print("Processing #{0} of {1}\t: '{2}'".format(CFile + 1, N_CSVFiles, c_file_name))
-        #Is the file new? (no if the output version exists already, so we skip it)s
+        # Is the file new? (no if the output version exists already, so we skip it)s
         if os.path.exists(c_file_op_path):
             print("Already exists, so skipping")
             continue
         print("Processing into '{}'".format(c_file_op_path))
 
-
-        #Read the data in:
+        # Read the data in:
         raw_results_df = pd.read_csv(c_file_ip_path)
-        #Start our clean...
+        # Start our clean...
         ######
         # 1) Drop the useless (for now) columns:
         raw_results_df = raw_results_df.drop(columns_to_drop, axis=1)
@@ -94,10 +92,27 @@ def main():
         # 5) Convert all weights to grams: (kg = g * 1000)
         raw_results_df['Weight'] = raw_results_df['Weight'].apply(Convert_Weight)
 
-        #Now save the new file:
-        #df.to_csv('new_file.csv', sep='\t', index=False)
+        # 6) Clean the Ingredients up a bit:
+        raw_results_df['Ingredients'] = raw_results_df['Ingredients'].apply(Clean_Ingredients)
+        # Now save the new file:
+        # df.to_csv('new_file.csv', sep='\t', index=False)
         raw_results_df.to_csv(c_file_op_path, sep='\t', index=False)
-        #df.to_csv(c_file_op_path, sep='\t', index=False)
+        # df.to_csv(c_file_op_path, sep='\t', index=False)
+
+def Clean_Ingredients(Ingredients_List):
+    """
+    Mostly applies regexs to remove the worse of the non-standard markup making keyword searches easier.
+    Very similar to Clean_Allergen();
+    this too has global dependencies for its regexes, check the code for current but:
+    ingrid_re = '(INGREDIENTS):* *'
+    "INGREDIENTS:" - yes, we know - from the start of the list.
+    """
+    # Check whether it is a string to attempt matching (might be NaN) - return if not
+    if not isinstance(Ingredients_List, str):
+        return ""
+    #Apply the regex:
+    v = re.sub(re.compile(ingrid_re, re.IGNORECASE), "", str(Ingredients_List))
+    return Ingredients_List
 
 def Convert_Weight(weight):
     """
@@ -107,23 +122,29 @@ def Convert_Weight(weight):
     expect it to be similar to this:
     weight_re = re.compile('(?P<weight>[\d.]+)(?P<units>[kK]*[Gg])')
     """
-    #Check whether it is a string to attempt matching (might be NaN) - et
+    # Check whether it is a string to attempt matching (might be NaN) - return if not
     if not isinstance(weight, str):
         return ""
 
-    #Try the match: (hoping to get the numbers and units  split from each other
+    # Try the match: (hoping to get the numbers and units split from each other that convert to a float)
     match_result = weight_re.search(weight)
-    return_weight = 0
+    return_weight = 0.0
+    try:
+        return_weight = float(match_result.group("weight"))
+    except:
+        print("Convert to float failure - returning empty weights")
+        return ""
+
     if match_result != None:
-        #So we matched a weight, was it g or kg?
-        if re.match("[Kk]",match_result.group("units")):
-            return(match_result.group("weight")*1000)
+        # So we matched a weight, was it g or kg?
+        # If kg x 1000 and return to rounded gram
+        if re.match("[Kk]", match_result.group("units")):
+            return (int(return_weight * 1000))
         else:
-            return match_result.group("weight")
+            return int(return_weight)
     else:
         # If we don't recognise the weight - return empty:
         return ""
-
 
 
 def Clean_Allergen(al_string):
@@ -138,18 +159,18 @@ def Clean_Allergen(al_string):
     Extra spaces and full stops are removed also
 
     """
-    #Reality check: this is a string we were passed correct?  Return empty if not:
+    # Reality check: this is a string we were passed correct?  Return empty if not:
     if not isinstance(al_string, str):
         return ""
     # Run the general regexs: first cleans up "Contains also:" the second the list of Allergens;
-    #(we aren't interested in logic here, just running them)
+    # (we aren't interested in logic here, just running them)
     al_string = re.sub(re.compile(contains_re), contains_result_str, str(al_string))
     al_string = re.sub(re.compile(delimter_re), delimter_result_str, str(al_string))
-    #Basic punctuation cleanup/out:
+    # Basic punctuation cleanup/out:
     al_string = re.sub(re.compile(' *, *'), ",", str(al_string))
     al_string = re.sub(re.compile('\.$'), "", str(al_string))
     al_string = re.sub(re.compile(': *'), ": ", str(al_string))
-    print (al_string)
+
     return al_string
 
 
@@ -157,5 +178,4 @@ if __name__ == '__main__':
     # contains_result_str = "Fluffy"
     # al_string = re.sub(r"Contains",  contains_result_str, "Contains Nothing")
     # print ("Result: '{}'".format(al_string))
-    # sys.exit(0)
     main()
