@@ -77,7 +77,10 @@ def main():
         # Start our clean...
         ######
         # 1) Drop the useless (for now) columns:
-        raw_results_df = raw_results_df.drop(columns_to_drop, axis=1)
+        #Probably this could be done with a list comprehension - but this is an improvements
+        for c_column in columns_to_drop:
+            if c_column in raw_results_df:
+                raw_results_df = raw_results_df.drop(c_column, axis=1)
 
         # 2) Extract the SKU / Product ID from the product URL and insert it as the first column:
         raw_results_df.insert(0, 'ID', raw_results_df['ProductsonPage-href'].str.extract(SKU_re))
