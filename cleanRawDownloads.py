@@ -18,7 +18,7 @@ columns_to_drop = ["web-scraper-order", "ProductsonPage",
                    "web-scraper-start-url", "Nut-HTML", "Description", "Pages", "Pages-href"]
 
 new_column_order = ["ID", "name", "ProductsonPage-href", "Ingredients", "Allergens", "weight"]
-new_column_names = ["Product ID", "Product Name", "URL", "Ingredients", "Allergens", "Weight"]
+
 
 # Target: https://www.tesco.com/groceries/en-GB/products/305983890 gives $1 = 305983890
 SKU_re = re.compile('\/(\d*)$')
