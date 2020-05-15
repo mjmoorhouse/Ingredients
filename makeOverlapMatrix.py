@@ -23,7 +23,7 @@ combined_matrix_fname = "all_products.txt"
 #to those in cleanRawDownloads.py
 from pandas import DataFrame
 
-new_column_names = ["Product ID", "Product Name", "URL", "Ingredients", "Allergens", "Weight"]
+new_column_names = ["Product ID", "Product Name", "URL", "Ingredients", "Allergens", "Weight", "Source"]
 
 def main():
     print("Loading Pandas and dependencies:")
@@ -81,6 +81,9 @@ def main():
         #Build the tag name (File Base Name + number of items):
         re_match = re.search(re.compile('(?P<tag>^.+)\.'), c_file_name)
         c_base_name = re_match.group("tag")
+        #Tag the data as to it's origin:
+
+        data_table['Source'] = c_base_name
         #The number of IDs - we use this more than once so:
         n_in_list = len(these_product_ids)
         #Build and store the tag name in the format "choc_biscuits(33)" or "crackers(46)"
