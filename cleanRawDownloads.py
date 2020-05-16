@@ -14,11 +14,11 @@ import sys
 import os
 
 # Until we get these into a separate file:
-columns_to_drop = ["web-scraper-order", "ProductsonPage",
-                   "web-scraper-start-url", "Nut-HTML", "Description", "Pages", "Pages-href"]
+columns_to_drop = ["web-scraper-order", "productsonpage",
+                   "web-scraper-start-url", "nut-html", "description", "pages", "pages-href"]
 
-new_column_order = ["ID", "name", "ProductsonPage-href", "Ingredients", "Allergens", "weight"]
-
+new_column_order = ["id", "name", "product-href", "ingredients", "allergens", "weight"]
+new_column_names = ["Product ID", "Product Name", "URL", "Ingredients", "Allergens", "Weight"]
 
 # Target: https://www.tesco.com/groceries/en-GB/products/305983890 gives $1 = 305983890
 SKU_re = re.compile('\/(\d*)$')
@@ -74,16 +74,23 @@ def main():
 
         # Read the data in:
         raw_results_df = pd.read_csv(c_file_ip_path)
-        # Start our clean...
+        # Start our clean...many of these for loops could likely be converted to list comprehensions
         ######
+        #Standardise all columns on lower case:
+        for c_column in raw_results_df.columns:
+            raw_results_df = raw_results_df.rename(columns={c_column : str(c_column).lower()})
         # 1) Drop the useless (for now) columns:
         #Probably this could be done with a list comprehension - but this is an improvements
         for c_column in columns_to_drop:
-            if c_column in raw_results_df:
+            if c_column in raw_results_df.columns:
                 raw_results_df = raw_results_df.drop(c_column, axis=1)
-
+        # 1a) Standardise the 'product-href' column name (called 'ProductsonPage-href' if from a multi-page run)
+        if 'productsonpage-href' in raw_results_df.columns:
+            raw_results_df = raw_results_df.rename(columns={'productsonpage-href': 'product-href'})
+        #             raw_results_df.insert(0, 'ID', raw_results_df['product-href'].str.extract(SKU_re))
+        #         else:
         # 2) Extract the SKU / Product ID from the product URL and insert it as the first column:
-        raw_results_df.insert(0, 'ID', raw_results_df['ProductsonPage-href'].str.extract(SKU_re))
+        raw_results_df.insert(0, 'id', raw_results_df['product-href'].str.extract(SKU_re))
 
         # 3) Re-order & retitle columns:
         raw_results_df = raw_results_df[new_column_order]
@@ -135,7 +142,6 @@ def Convert_Weight(weight):
     try:
         return_weight = float(match_result.group("weight"))
     except:
-        print("Convert to float failure - returning empty weights")
         return ""
 
     if match_result != None:
