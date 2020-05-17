@@ -20,7 +20,7 @@ columns_to_drop = ["web-scraper-order", "productsonpage",
 new_column_order = ["id", "name", "product-href", "ingredients", "allergens", "weight"]
 new_column_names = ["Product ID", "Product Name", "URL", "Ingredients", "Allergens", "Weight"]
 
-# Target: https://www.tesco.com/groceries/en-GB/products/305983890 gives $1 = 305983890
+# Target: https://www.XXXX./groceries/en-GB/products/305983890 gives $1 = 305983890
 SKU_re = re.compile('\/(\d*)$')
 contains_re = '(also )*([Cc]ontain)s* *(trace)*s* *(of)*:*'
 contains_result_str = 'Contain:'
