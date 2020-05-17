@@ -124,9 +124,13 @@ def main():
 
     #To FS: the distance Matrix:
     dist_matrix.to_csv(overlap_matrix_fname, sep='\t', index=True)
-    #To FS: The Mega / Meta data frame:
-    mega_data_df.to_csv(combined_matrix_fname, sep ='\t', index=True)
+    print("Writing out overlap matrix as : '{}'".format(overlap_matrix_fname))
 
+    #To FS: The Mega / Meta data frame:
+    mega_data_df.index.name = "index"
+    mega_data_df.to_csv(combined_matrix_fname, sep ='\t', index=True)
+    print("Writing out combined results matrix as: '{}'".format(combined_matrix_fname))
+    print ("Which has '{}' entries.".format(len(mega_data_df.index)))
 
 #### End of Main Program
 def Score_List(list_a, list_b):

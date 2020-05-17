@@ -17,8 +17,8 @@ import os
 columns_to_drop = ["web-scraper-order", "productsonpage",
                    "web-scraper-start-url", "nut-html", "description", "pages", "pages-href"]
 
-new_column_order = ["id", "name", "product-href", "ingredients", "allergens", "weight"]
-new_column_names = ["Product ID", "Product Name", "URL", "Ingredients", "Allergens", "Weight"]
+new_column_order = ["id", "name", "product-href", "ingredients", "allergens", "weight", "comments"]
+new_column_names = ["Product ID", "Product Name", "URL", "Ingredients", "Allergens", "Weight", "Comments"]
 
 # Target: https://www.XXXX./groceries/en-GB/products/305983890 gives $1 = 305983890
 SKU_re = re.compile('\/(\d*)$')
@@ -26,7 +26,7 @@ contains_re = '(also )*([Cc]ontain)s* *(trace)*s* *(of)*:*'
 contains_result_str = 'Contain:'
 delimter_re = '(and )|(\& )'
 delimter_result_str = ', '
-ingrid_re = '(INGREDIENTS):* *'
+ingrid_re = '(Ingredients)* *(INGREDIENTS)* *(LIST)*:* *'
 
 weight_re = re.compile('(?P<weight>[\d.]+)(?P<units>[kK]*[Gg])')
 
@@ -76,33 +76,38 @@ def main():
         raw_results_df = pd.read_csv(c_file_ip_path)
         # Start our clean...many of these for loops could likely be converted to list comprehensions
         ######
-        #Standardise all columns on lower case:
+        # 1) Standardise all columns on lower case:
         for c_column in raw_results_df.columns:
             raw_results_df = raw_results_df.rename(columns={c_column : str(c_column).lower()})
-        # 1) Drop the useless (for now) columns:
+
+        # 2) Add a "Comments" column if one doesn't exist:
+        if not 'comments' in raw_results_df.columns:
+            raw_results_df['comments'] = ''
+
+        # 3) Drop the useless (for now) columns:
         #Probably this could be done with a list comprehension - but this is an improvements
         for c_column in columns_to_drop:
             if c_column in raw_results_df.columns:
                 raw_results_df = raw_results_df.drop(c_column, axis=1)
-        # 1a) Standardise the 'product-href' column name (called 'ProductsonPage-href' if from a multi-page run)
+
+        # 4) Standardise the 'product-href' column name (called 'ProductsonPage-href' if from a multi-page run)
         if 'productsonpage-href' in raw_results_df.columns:
             raw_results_df = raw_results_df.rename(columns={'productsonpage-href': 'product-href'})
-        #             raw_results_df.insert(0, 'ID', raw_results_df['product-href'].str.extract(SKU_re))
-        #         else:
-        # 2) Extract the SKU / Product ID from the product URL and insert it as the first column:
+
+        # 5) Extract the SKU / Product ID from the product URL and insert it as the first column:
         raw_results_df.insert(0, 'id', raw_results_df['product-href'].str.extract(SKU_re))
 
-        # 3) Re-order & retitle columns:
+        # 6) Re-order & retitle columns:
         raw_results_df = raw_results_df[new_column_order]
         raw_results_df.columns = new_column_names
 
-        # 4) Standardise to "May contain:" in the Allergens columns
+        # 7) Standardise to "May contain:" in the Allergens columns
         raw_results_df['Allergens'] = raw_results_df['Allergens'].apply(Clean_Allergen)
 
-        # 5) Convert all weights to grams: (kg = g * 1000)
+        # 8) Convert all weights to grams: (kg = g * 1000)
         raw_results_df['Weight'] = raw_results_df['Weight'].apply(Convert_Weight)
 
-        # 6) Clean the Ingredients up a bit:
+        # 9) Clean the Ingredients up a bit:
         raw_results_df['Ingredients'] = raw_results_df['Ingredients'].apply(Clean_Ingredients)
         # Now save the new file:
         # df.to_csv('new_file.csv', sep='\t', index=False)
@@ -121,7 +126,7 @@ def Clean_Ingredients(Ingredients_List):
     if not isinstance(Ingredients_List, str):
         return ""
     #Apply the regex:
-    v = re.sub(re.compile(ingrid_re, re.IGNORECASE), "", str(Ingredients_List))
+    Ingredients_List = re.sub(re.compile(ingrid_re, re.IGNORECASE), "", str(Ingredients_List))
     return Ingredients_List
 
 def Convert_Weight(weight):
