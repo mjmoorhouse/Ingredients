@@ -18,6 +18,7 @@ import re
 
 overlap_matrix_fname = "overlapmatrix.txt"
 combined_matrix_fname = "all_products.txt"
+dist_martrix_fname = "overlapmatrix.png"
 
 #These are used to build the mega/meta dataframe: they should sync - ideally via a cofig file at some point -
 #to those in cleanRawDownloads.py
@@ -30,6 +31,9 @@ def main():
     try:
         import pandas as pd
         import numpy as np
+        import seaborn as sb
+        import matplotlib.pyplot as plt
+        from matplotlib.colors import LinearSegmentedColormap
     except:
         sys.exit("Could not load pandas module - check installation and environment is active")
     #Declare the list storing the IDs explictly and the 'columns names' based on the none-extension parts of the filenames
@@ -88,7 +92,9 @@ def main():
         n_in_list = len(these_product_ids)
         #Build and store the tag name in the format "choc_biscuits(33)" or "crackers(46)"
         #Note: This is used for displate purposes only in the distance matrix:
-        tag_list.append(c_base_name + "(" + str(n_in_list)+")")
+        tag_list.append(c_base_name)
+        #Alternative if the number of items in the name is helpful "dips(28)" cf. "dips"
+        #tag_list.append(c_base_name + "(" + str(n_in_list) + ")")
 
         #Add these IDs to the main list also:
         IDs_list.append(these_product_ids)
@@ -132,6 +138,40 @@ def main():
     print("Writing out combined results matrix as: '{}'".format(combined_matrix_fname))
     print ("Which has '{}' entries.".format(len(mega_data_df.index)))
 
+    #Create heatmaps of distance matrix using seaborn, saving the result to a png file:
+    #
+    # To tweak plot elements: https://seaborn.pydata.org/tutorial/aesthetics.html#seaborn-figure-styles
+    plt.subplots(figsize=(15,15))
+    plt.suptitle("Counts of Product ID Common for Product Data Lists", fontsize= 20)
+    plt.title("(Numbers on diagonal indicate number of products in list)", fontsize=15)
+
+    #Mask off half (less diagonal) of the matrix.
+    mask = np.zeros_like(dist_matrix)
+    mask[np.triu_indices_from(mask, k=1)] = True
+
+    #Create custom colors (orange):
+    #After: https://stackoverflow.com/questions/38836154/discrete-legend-in-seaborn-heatmap-plot
+    myColors = ('#fff5e6', '#ffcc80', '#ffc266', '#ffad33', '#ff9900')
+    my_cmap = LinearSegmentedColormap.from_list('Custom', myColors, len(myColors))
+
+    #Create the heatmap and annotation it
+    #(briefly: masked to triangular, blue theme, grey grids lines, full blue at 5m, integer annotations, titles as above.
+
+    sb.heatmap(dist_matrix.astype('float'), annot=True,
+               mask=mask, square=True, cmap=my_cmap, linewidths=.5, linecolor='grey', fmt='g', vmax=5)
+    from matplotlib.colors import LinearSegmentedColormap
+    #Now faff with the color bar labels - maybe:
+    # colorbar = ax.colorbar(sb)
+    # colorbar.set_ticks(range(0,4))
+    # colorbar.set_ticklabels(range(0,4))
+
+    try:
+        print ("Saving distance matrix as a PNG to '{}'".format(dist_martrix_fname))
+        plt.savefig(dist_martrix_fname)
+    except:
+        print ("Saving distance as PNG failed")
+    plt.show()
+
 #### End of Main Program
 def Score_List(list_a, list_b):
     """
@@ -142,7 +182,10 @@ def Score_List(list_a, list_b):
     setB = set(list_b)
     overlap = setA & setB
     universe = setA | setB
-    d = 2 * len(overlap) / len(universe)
+    #Scaled 0-1:
+    #d = 1 * len(overlap) / len(universe)
+    #Just raw counts: 1-max (A|B)
+    d = len(overlap)
     return d
 
 def Check_Duplicates(data_list):
