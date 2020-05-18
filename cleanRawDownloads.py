@@ -74,13 +74,14 @@ def main():
 
         # Read the data in:
         raw_results_df = pd.read_csv(c_file_ip_path)
+
         # Start our clean...many of these for loops could likely be converted to list comprehensions
         ######
         # 1) Standardise all columns on lower case:
         for c_column in raw_results_df.columns:
             raw_results_df = raw_results_df.rename(columns={c_column : str(c_column).lower()})
 
-        # 2) Add a "Comments" column if one doesn't exist:
+        # 2) Add a "Comments" column if one doesn't exist; otherwise preserve the existing one
         if not 'comments' in raw_results_df.columns:
             raw_results_df['comments'] = ''
 
@@ -109,10 +110,10 @@ def main():
 
         # 9) Clean the Ingredients up a bit:
         raw_results_df['Ingredients'] = raw_results_df['Ingredients'].apply(Clean_Ingredients)
-        # Now save the new file:
-        # df.to_csv('new_file.csv', sep='\t', index=False)
+
+        # 10) Now save the cleaned version of the file:
         raw_results_df.to_csv(c_file_op_path, sep='\t', index=False)
-        # df.to_csv(c_file_op_path, sep='\t', index=False)
+
 
 def Clean_Ingredients(Ingredients_List):
     """
