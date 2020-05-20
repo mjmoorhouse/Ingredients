@@ -15,6 +15,7 @@ import sys
 #User servicable parts:
 manual_ingredients_tag = "Manual Ingredients"
 combined_matrix_fname = "all_products.txt"
+html_output_file_name = "product_ingredients_status.html"
 
 #Read the data in:
 try:
@@ -50,6 +51,8 @@ for c_group, this_group in products_df.groupby(['Source']):
 #Create the DataFrame for ease of printing and manipulation:
 group_counts_df = pd.DataFrame (group_counts,
                                 columns=["Product Class", "Total Products", "Ingredients", "Corr. Ingredients"]  )
+
+group_counts_df.columns = ["Product Class", "Number of Products", "Ingredients Present", "Ingredients Added Manually"]
 #Printout locally prior to pretty graphing:
 print ("Ultimately:")
 print (group_counts_df)
@@ -75,32 +78,33 @@ styles = [
     dict(selector=".col0",props=[("background-color", "DarkOrange"),
                                  ("color", "White"),
                                  ("font-size", "120%"),
+                                 ("padding-left", "2px"),
                                  ("text-align", "left"),
                                  ("border-right", "2px solid #000"),
                                  ("font-family", "\"Times New Roman\", Times, serif")]),
     dict(selector=".col1,.col2,.col3", props = [("text-align","center")]),
     dict(selector="tr:nth-child(even)",props = [("background-color","#f2f2f2")]),
     dict(selector=".row_heading", props =[("border-right", "2px solid #000"),
-                                ("font - size", "120 %"),
+                                ("font - size", "110 %"),
                                 ("text-align","left"),
                                 ("width", "5em"),
                                 ("background-color","DarkOrange"),
                                 ("color","White")]),
     dict(selector="caption", props=[("caption-side", "bottom"),
                                     ("color", "#bbb")]),
-    dict(selector=".col_heading", props=[("font-size", "120%"),
+    dict(selector=".col_heading", props=[("font-size", "110%"),
                                               ("text-align", "center"),
                                               ("background-color", "DarkOrange"),
                                               ("color", "White"),
                                               ("border-bottom", "2px solid #000"),
-                                              ("width", "10em"),
+                                              ("width", "8em"),
                                               ("text-align", "center")])
    ]
 df_style_obj.set_table_styles(styles)
 #df_style_obj.format("{:,.0f}")
 df_style_obj.hide_index()
 print (df_style_obj.render())
-file2 = open(r"table_example.html","w+")
+file2 = open(html_output_file_name,"w+")
 file2.write(df_style_obj.render())
 file2.close()
 #print (df.style)
