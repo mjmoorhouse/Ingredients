@@ -133,12 +133,12 @@ axis_gtp = graph_table.plot.bar(x="Product Class",
             y=["Parsed Automatically", "Ingredients Added Manually", "Absent"],
             stacked=True,
             title="Completeness of Ingredient List Datasets",
+            position=0.8,
             figsize=(7,6),
             color=bar_colors)
 #Tweak the axises:
-axis_gtp.set_ylabel("Count")
-axis_gtp.set_xlabel("Product")
-
+axis_gtp.set_ylabel("Number of Products")
+plt.subplots_adjust(bottom=0.3)
 plt.savefig(Ingredients_Status_fname)
 plt.show(block=True)
 
