@@ -8,6 +8,13 @@ The markup tag denoting ingredients have been entered manually it:
 manual_ingredients_tag = "Manual Ingredients"
 n_corrected_ingredients = int(this_group["Comments"].str.count("Manual Ingredients").sum())
 
+It produces two tables of the completeness of the counts (raw) and a stacked bar graph showing the data
+specificallly for each product category:
+*) The counts for the number of ingredients present parsed directly
+*) Those that were added in manually
+*) Those 'Absent' (currently no tag as to whether it is because nobody they aren't avaialable
+ or haven't had an attempt to  correct them).
+
 """
 import pandas as pd
 import sys
@@ -17,6 +24,15 @@ manual_ingredients_tag = "Manual Ingredients"
 combined_matrix_fname = "all_products.txt"
 html_output_file_name = "product_ingredients_status.html"
 Ingredients_Status_fname = "Ingredients_Status.png"
+
+def Clean_Up(name):
+    """
+    Changes the "_" to spaces and capitalises the string to titlecase:
+    "foo_bar" becomes: "Foo Bar"
+    """
+    #Convert undersco
+    name = re.sub(re.compile('_'),' ', name)
+    return name.title()
 
 #Read the data in:
 try:
@@ -126,6 +142,9 @@ graph_table["Absent"] = (group_counts_df["Number of Products"] - \
                                     group_counts_df["Ingredients Present"] -
                                     group_counts_df["Ingredients Added Manually"])
 print (graph_table)
+
+#Clean up the labels:
+graph_table["Product Class"] = graph_table["Product Class"].apply(Clean_Up)
 
 #Plot the chart:
 bar_colors = ["#80dd80", "#5555FF", "#888888"]
