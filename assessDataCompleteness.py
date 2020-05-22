@@ -18,6 +18,8 @@ specificallly for each product category:
 """
 import pandas as pd
 import sys
+import re
+import matplotlib.pyplot as plt
 
 #User servicable parts:
 manual_ingredients_tag = "Manual Ingredients"
@@ -25,6 +27,42 @@ combined_matrix_fname = "all_products.txt"
 html_output_file_name = "product_ingredients_status.html"
 Ingredients_Status_fname = "Ingredients_Status.png"
 
+#And the CSS for the tables:
+styles = [
+    dict(selector="table", props =[("border-spacing", "0"),
+                                   ("padding","0"),
+                                   ("border-collapse","collapse")]),
+    dict(selector="td", props =[("text-align", "center"),
+                                ("padding","0px"),
+                                  ("font-family", "\"Lucida Console\", Courier, monospace"),
+                                ("border-right","2px solid #000")]),
+    dict(selector=".col0",props=[("background-color", "DarkOrange"),
+                                 ("color", "White"),
+                                 ("font-size", "120%"),
+                                 ("padding-left", "2px"),
+                                 ("text-align", "left"),
+                                 ("font-family", "\"Times New Roman\", Times, serif")]),
+    dict(selector=".col1,.col2,.col3", props = [("text-align","center")]),
+    dict(selector="tr:nth-child(even)",props = [("background-color","#f2f2f2")]),
+    dict(selector=".row_heading", props =[("border-right", "2px solid #000"),
+                                ("font - size", "110 %"),
+                                ("text-align","left"),
+                                ("width", "5em"),
+                                ("background-color","DarkOrange"),
+                                ("color","White")]),
+    dict(selector="caption", props=[("caption-side", "bottom"),
+                                    ("color", "#bbb")]),
+    dict(selector=".col_heading", props=[("font-size", "110%"),
+                                              ("text-align", "center"),
+                                              ("background-color", "DarkOrange"),
+                                              ("color", "White"),
+                                              ("border-right", "2px solid #000"),
+                                              ("border-bottom","2px solid #000"),
+                                              ("width", "8em"),
+                                              ("text-align", "center")])
+   ]
+
+# Couple of Helper functions
 def Clean_Up(name):
     """
     Changes the "_" to spaces and capitalises the string to titlecase:
@@ -34,6 +72,19 @@ def Clean_Up(name):
     name = re.sub(re.compile('_'),' ', name)
     return name.title()
 
+def Hack_Css_Table (css):
+    """
+    Swaps over the location of the table tag and the CSS ID
+    "# CSSIDandlongwithit table {"
+    """
+    return (re.sub("#(.*?) table", r"#\1", css))
+
+
+"""
+Start Code Proper
+================================
+Read the data in from - presumably - the combined tables.
+"""
 #Read the data in:
 try:
     products_df = pd.read_csv(combined_matrix_fname, sep="\t")
@@ -47,6 +98,7 @@ print (products_df.head())
 
 #Main results store; we create a DF from this ultimately
 group_counts = []
+
 
 #For all the groups:
 for c_group, this_group in products_df.groupby(['Source']):
@@ -74,12 +126,10 @@ group_counts_df.columns = ["Product Class", "Number of Products", "Ingredients P
 print ("Ultimately:")
 print (group_counts_df)
 
-
 """
-Pretty Print 2/3: The HTML formatted table
-
+Pretty Print 1/3: The HTML formatted table of the data as downloaded and cleaned.
+These are simple counts.
 """
-
 figure_caption = "Completeness of Data Download of Ingredients"
 
 #As we work a lot with the style object - create a short cut:
@@ -118,32 +168,40 @@ styles = [
                                               ("width", "8em"),
                                               ("text-align", "center")])
    ]
-df_style_obj.set_table_styles(styles)
-#df_style_obj.format("{:,.0f}")
-df_style_obj.hide_index()
-import re
-#Render to a string first as we need to back-hack the table CSS:
-table_as_html = (df_style_obj.render())
-table_as_html = re.sub("#(.*?) table", r"#\1", table_as_html)
-import matplotlib.pyplot as plt
 
-# group_counts_df.columns =
-# ["Product Class", "Number of Products", "Ingredients Present", "Ingredients Added Manually"]
+#Use the styles defined above:
+df_style_obj.set_table_styles(styles)
+df_style_obj.hide_index()
+#Render to a string first as we need to back-hack the table CSS (yuck, yuck):
+table_as_html = Hack_Css_Table(df_style_obj.render())
+
+#Now write the file out as HTML
+file2 = open(html_output_file_name,"w+")
+file2.write(table_as_html)
+#For neatnees
+file2.close()
+
+"""
+Pretty Print 3/3: The HTML table of the processed count data and a chart to go with it:
+"""
+
+#Declare the raw, empty table:
 graph_table = pd.DataFrame (group_counts,
               columns=["Product Class", "Parsed Automatically", "Ingredients Added Manually", "Absent"])
 
 
+
+#Populate the table to graph from:
+#Ensure the indexes are the same so we can copy columns across:
 graph_table.index = group_counts_df.index
-#Populate the table for graph:
+
 graph_table["Product Class"] = group_counts_df["Product Class"]
 graph_table["Parsed Automatically"] = group_counts_df["Ingredients Present"]# - group_counts_df["Ingredients Present"])
 graph_table["Ingredients Added Manually"] = group_counts_df["Ingredients Added Manually"]
 graph_table["Absent"] = (group_counts_df["Number of Products"] - \
                                     group_counts_df["Ingredients Present"] -
                                     group_counts_df["Ingredients Added Manually"])
-print (graph_table)
-
-#Clean up the labels:
+#Clean up the product labels:
 graph_table["Product Class"] = graph_table["Product Class"].apply(Clean_Up)
 
 #Plot the chart:
@@ -155,17 +213,15 @@ axis_gtp = graph_table.plot.bar(x="Product Class",
             position=0.8,
             figsize=(7,6),
             color=bar_colors)
-#Tweak the axises:
+
+#Tweak the axeses:
 axis_gtp.set_ylabel("Number of Products")
 plt.subplots_adjust(bottom=0.3)
 plt.savefig(Ingredients_Status_fname)
+
+#For kicks we might as well have the
 plt.show(block=True)
 
+
+
 print ("All done, bye-bye")
-
-
-#Now write the file out:
-file2 = open(html_output_file_name,"w+")
-file2.write(table_as_html)
-#For neatnees
-file2.close()
