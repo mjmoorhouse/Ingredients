@@ -74,13 +74,13 @@ styles = [
                                    ("border-collapse","collapse")]),
     dict(selector="td", props =[("text-align", "center"),
                                 ("padding","0px"),
-                                  ("font-family", "\"Lucida Console\", Courier, monospace")]),
+                                  ("font-family", "\"Lucida Console\", Courier, monospace"),
+                                ("border-right","2px solid #000")]),
     dict(selector=".col0",props=[("background-color", "DarkOrange"),
                                  ("color", "White"),
                                  ("font-size", "120%"),
                                  ("padding-left", "2px"),
                                  ("text-align", "left"),
-                                 ("border-right", "2px solid #000"),
                                  ("font-family", "\"Times New Roman\", Times, serif")]),
     dict(selector=".col1,.col2,.col3", props = [("text-align","center")]),
     dict(selector="tr:nth-child(even)",props = [("background-color","#f2f2f2")]),
@@ -96,15 +96,46 @@ styles = [
                                               ("text-align", "center"),
                                               ("background-color", "DarkOrange"),
                                               ("color", "White"),
-                                              ("border-bottom", "2px solid #000"),
+                                              ("border-right", "2px solid #000"),
+                                              ("border-bottom","2px solid #000"),
                                               ("width", "8em"),
                                               ("text-align", "center")])
    ]
 df_style_obj.set_table_styles(styles)
 #df_style_obj.format("{:,.0f}")
 df_style_obj.hide_index()
-print (df_style_obj.render())
+import re
+#Render to a string first as we need to back-hack the table CSS:
+table_as_html = (df_style_obj.render())
+table_as_html = re.sub("#(.*?) table", r"#\1", table_as_html)
+import matplotlib.pyplot as plot
+
+# group_counts_df.columns =
+# ["Product Class", "Number of Products", "Ingredients Present", "Ingredients Added Manually"]
+graph_table = pd.DataFrame (group_counts,
+              columns=["Product Class", "Parsed Automatically", "Ingredients Added Manually", "Absent"])
+
+
+graph_table.index = group_counts_df.index
+#Populate:
+graph_table["Product Class"] = group_counts_df["Product Class"]
+graph_table["Parsed Automatically"] = group_counts_df["Ingredients Present"]# - group_counts_df["Ingredients Present"])
+graph_table["Ingredients Added Manually"] = group_counts_df["Ingredients Added Manually"]
+graph_table["Absent"] = (group_counts_df["Number of Products"] - \
+                                    group_counts_df["Ingredients Present"] -
+                                    group_counts_df["Ingredients Added Manually"])
+print (graph_table)
+bar_colors = ["#80dd80", "#5555FF", "#888888"]
+graph_table.plot.bar(x="Product Class",
+            y=["Parsed Automatically", "Ingredients Added Manually", "Absent"],
+            stacked=True,
+            color=bar_colors)
+plot.show(block=True)
+print ("All done, bye-bye")
+sys.exit(0)
+
+#Now write the file out:
 file2 = open(html_output_file_name,"w+")
-file2.write(df_style_obj.render())
+file2.write(table_as_html)
+#For neatnees
 file2.close()
-#print (df.style)
