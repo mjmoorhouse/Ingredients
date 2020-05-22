@@ -16,6 +16,7 @@ import sys
 manual_ingredients_tag = "Manual Ingredients"
 combined_matrix_fname = "all_products.txt"
 html_output_file_name = "product_ingredients_status.html"
+Ingredients_Status_fname = "Ingredients_Status.png"
 
 #Read the data in:
 try:
@@ -108,7 +109,7 @@ import re
 #Render to a string first as we need to back-hack the table CSS:
 table_as_html = (df_style_obj.render())
 table_as_html = re.sub("#(.*?) table", r"#\1", table_as_html)
-import matplotlib.pyplot as plot
+import matplotlib.pyplot as plt
 
 # group_counts_df.columns =
 # ["Product Class", "Number of Products", "Ingredients Present", "Ingredients Added Manually"]
@@ -117,7 +118,7 @@ graph_table = pd.DataFrame (group_counts,
 
 
 graph_table.index = group_counts_df.index
-#Populate:
+#Populate the table for graph:
 graph_table["Product Class"] = group_counts_df["Product Class"]
 graph_table["Parsed Automatically"] = group_counts_df["Ingredients Present"]# - group_counts_df["Ingredients Present"])
 graph_table["Ingredients Added Manually"] = group_counts_df["Ingredients Added Manually"]
@@ -125,14 +126,24 @@ graph_table["Absent"] = (group_counts_df["Number of Products"] - \
                                     group_counts_df["Ingredients Present"] -
                                     group_counts_df["Ingredients Added Manually"])
 print (graph_table)
+
+#Plot the chart:
 bar_colors = ["#80dd80", "#5555FF", "#888888"]
-graph_table.plot.bar(x="Product Class",
+axis_gtp = graph_table.plot.bar(x="Product Class",
             y=["Parsed Automatically", "Ingredients Added Manually", "Absent"],
             stacked=True,
+            title="Completeness of Ingredient List Datasets",
+            figsize=(7,6),
             color=bar_colors)
-plot.show(block=True)
+#Tweak the axises:
+axis_gtp.set_ylabel("Count")
+axis_gtp.set_xlabel("Product")
+
+plt.savefig(Ingredients_Status_fname)
+plt.show(block=True)
+
 print ("All done, bye-bye")
-sys.exit(0)
+
 
 #Now write the file out:
 file2 = open(html_output_file_name,"w+")
