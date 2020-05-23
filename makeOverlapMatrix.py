@@ -159,11 +159,7 @@ def main():
 
     sb.heatmap(dist_matrix.astype('float'), annot=True,
                mask=mask, square=True, cmap=my_cmap, linewidths=.5, linecolor='grey', fmt='g', vmax=5)
-    from matplotlib.colors import LinearSegmentedColormap
-    #Now faff with the color bar labels - maybe:
-    # colorbar = ax.colorbar(sb)
-    # colorbar.set_ticks(range(0,4))
-    # colorbar.set_ticklabels(range(0,4))
+
 
     try:
         print ("Saving distance matrix as a PNG to '{}'".format(dist_martrix_fname))

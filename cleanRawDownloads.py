@@ -21,12 +21,12 @@ new_column_order = ["id", "name", "product-href", "ingredients", "allergens", "w
 new_column_names = ["Product ID", "Product Name", "URL", "Ingredients", "Allergens", "Weight", "Comments"]
 
 # Target: https://www.XXXX./groceries/en-GB/products/305983890 gives $1 = 305983890
-SKU_re = re.compile('\/(\d*)$')
-contains_re = '(also )*([Cc]ontain)s* *(trace)*s* *(of)*:*'
+sku_re = re.compile('\/(\d*)$')
+contains_re = re.compile('(also )*([Cc]ontain)s* *(trace)*s* *(of)*:*')
 contains_result_str = 'Contain:'
-delimter_re = '(and )|(\& )'
+delimter_re = re.compile('(and )|(\& )')
 delimter_result_str = ', '
-ingrid_re = '(Ingredients)* *(INGREDIENTS)* *(LIST)*:* *'
+ingrid_re = re.compile('(Ingredients)* *(INGREDIENTS)* *(LIST)*:* *', re.IGNORECASE)
 
 weight_re = re.compile('(?P<weight>[\d.]+)(?P<units>[kK]*[Gg])')
 
@@ -51,21 +51,21 @@ def main():
     print("Location of data files: {}".format(dataLocation))
 
     # Use a list comprehension to get all the CSV - hence Data - files, then count them:
-    CSVList = [x for x in os.listdir(dataLocation) if x.endswith(".csv")]
-    N_CSVFiles = len(CSVList)
-    if N_CSVFiles > 0:
-        print("Are [{0}] Files: {1}".format(len(CSVList), CSVList))
+    csv_list = [x for x in os.listdir(dataLocation) if x.endswith(".csv")]
+    n_csv_files = len(csv_list)
+    if n_csv_files > 0:
+        print("Are [{0}] Files: {1}".format(len(csv_list), csv_list))
     else:
         print("No CSV Files found")
 
     # Do something more interesting - or at least pretend to:
-    for CFile in range(0, N_CSVFiles):
+    for c_file in range(0, n_csv_files):
         # Build the file paths - including .txt instead of .csv for the output file so it opens in Excel easier
-        c_file_name = CSVList[CFile]
+        c_file_name = csv_list[c_file]
         c_file_ip_path = dataLocation + "\\" + c_file_name
         c_file_op_path = outdir + "\\" + c_file_name
         c_file_op_path = re.sub('\.csv$', '.txt', c_file_op_path)
-        print("Processing #{0} of {1}\t: '{2}'".format(CFile + 1, N_CSVFiles, c_file_name))
+        print("Processing #{0} of {1}\t: '{2}'".format(c_file + 1, n_csv_files, c_file_name))
         # Is the file new? (no if the output version exists already, so we skip it)s
         if os.path.exists(c_file_op_path):
             print("Already exists, so skipping")
@@ -96,26 +96,26 @@ def main():
             raw_results_df = raw_results_df.rename(columns={'productsonpage-href': 'product-href'})
 
         # 5) Extract the SKU / Product ID from the product URL and insert it as the first column:
-        raw_results_df.insert(0, 'id', raw_results_df['product-href'].str.extract(SKU_re))
+        raw_results_df.insert(0, 'id', raw_results_df['product-href'].str.extract(sku_re))
 
         # 6) Re-order & retitle columns:
         raw_results_df = raw_results_df[new_column_order]
         raw_results_df.columns = new_column_names
 
         # 7) Standardise to "May contain:" in the Allergens columns
-        raw_results_df['Allergens'] = raw_results_df['Allergens'].apply(Clean_Allergen)
+        raw_results_df['Allergens'] = raw_results_df['Allergens'].apply(clean_allergens)
 
         # 8) Convert all weights to grams: (kg = g * 1000)
-        raw_results_df['Weight'] = raw_results_df['Weight'].apply(Convert_Weight)
+        raw_results_df['Weight'] = raw_results_df['Weight'].apply(convert_weight)
 
         # 9) Clean the Ingredients up a bit:
-        raw_results_df['Ingredients'] = raw_results_df['Ingredients'].apply(Clean_Ingredients)
+        raw_results_df['Ingredients'] = raw_results_df['Ingredients'].apply(clean_ingredients)
 
         # 10) Now save the cleaned version of the file:
         raw_results_df.to_csv(c_file_op_path, sep='\t', index=False)
 
 
-def Clean_Ingredients(Ingredients_List):
+def clean_ingredients(ingredients_list):
     """
     Mostly applies regexs to remove the worse of the non-standard markup making keyword searches easier.
     Very similar to Clean_Allergen();
@@ -124,13 +124,13 @@ def Clean_Ingredients(Ingredients_List):
     "INGREDIENTS:" - yes, we know - from the start of the list.
     """
     # Check whether it is a string to attempt matching (might be NaN) - return if not
-    if not isinstance(Ingredients_List, str):
+    if not isinstance(ingredients_list, str):
         return ""
     #Apply the regex:
-    Ingredients_List = re.sub(re.compile(ingrid_re, re.IGNORECASE), "", str(Ingredients_List))
-    return Ingredients_List
+    ingredients_list = re.sub(ingrid_re, "", str(ingredients_list))
+    return ingredients_list
 
-def Convert_Weight(weight):
+def convert_weight(weight):
     """
     Filters the worst of the junk from the weight column returning "" on a bad match for grams or kilograms (g or kg)
     Also converts kilo grams to grams and returns this value.
@@ -162,7 +162,7 @@ def Convert_Weight(weight):
         return ""
 
 
-def Clean_Allergen(al_string):
+def clean_allergens(al_string):
     """
     Remember these - check the program start (or config file if implemented) need setting defined.
     (these can't be passed easily)
@@ -179,10 +179,11 @@ def Clean_Allergen(al_string):
         return ""
     # Run the general regexs: first cleans up "Contains also:" the second the list of Allergens;
     # (we aren't interested in logic here, just running them)
-    al_string = re.sub(re.compile(contains_re), contains_result_str, str(al_string))
-    al_string = re.sub(re.compile(delimter_re), delimter_result_str, str(al_string))
+    al_string = re.sub(contains_re, contains_result_str, str(al_string))
+    al_string = re.sub(delimter_re, delimter_result_str, str(al_string))
+
     # Basic punctuation cleanup/out:
-    al_string = re.sub(re.compile(' *, *'), ",", str(al_string))
+    al_string = re.sub(re.compile(', *'), ",", str(al_string))
     al_string = re.sub(re.compile('\.$'), "", str(al_string))
     al_string = re.sub(re.compile(': *'), ": ", str(al_string))
 
