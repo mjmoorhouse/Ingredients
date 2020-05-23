@@ -188,9 +188,6 @@ def Clean_Allergen(al_string):
 
     return al_string
 
-
+#This construct to allow functions in any order:
 if __name__ == '__main__':
-    # contains_result_str = "Fluffy"
-    # al_string = re.sub(r"Contains",  contains_result_str, "Contains Nothing")
-    # print ("Result: '{}'".format(al_string))
     main()
