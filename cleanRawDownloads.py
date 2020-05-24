@@ -184,7 +184,7 @@ def clean_allergens(al_string):
 
     # Basic punctuation cleanup/out:
     al_string = re.sub(re.compile(', *'), ",", str(al_string))
-    al_string = re.sub(re.compile('\.$'), "", str(al_string))
+    al_string = re.sub(re.compile('\.$'), "", str(al_string)) #Not working?  "GardenPeas." is coming through?
     al_string = re.sub(re.compile(': *'), ": ", str(al_string))
 
     return al_string
