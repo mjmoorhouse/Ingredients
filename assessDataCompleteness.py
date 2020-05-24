@@ -15,12 +15,19 @@ specificallly for each product category:
 *) Those 'Absent' (currently no tag as to whether it is because nobody they aren't avaialable
  or haven't had an attempt to  correct them).
 
+A tally of the ingredients is done by splitting on commas (possibly naively given:
+"WheatFlour[WheatFlour,CalciumCarbonate,...etc]" and the top 'n' (tails) printed items and values printed.
+
+Ingredients >x and <y characters in length are excluded as are missing values (nan).
+
+
 """
 import pandas as pd
 import sys
 import re
 import matplotlib.pyplot as plt
 import ingredients as ind
+import collections # Because not Perl and Hash Arrays...
 
 #User servicable parts:
 manual_ingredients_tag = "Manual Ingredients"
@@ -156,9 +163,65 @@ def main():
     plt.savefig(Ingredients_Status_fname)
 
     # For kicks we might as well have the
-    plt.show(block=True)
+    #plt.show(block=True)
 
+    """
+    Phase II: Summarise Ingredients
+    Computes simple counts of the ingredients to produce a list
+    
+    To stop dictionary / count pollution there are two limits set on the max & min limit of the ingredients
+    in the data set; this prevents mis-parsings being entered into the main dictionary 
+    max_key_length = 3
+    max_key_length = 40  
+    """
 
+    max_key_length = 30
+    min_key_length = 3
+    #In Perl this would be built in?
+
+    #Create the tally:
+    ingredients_tally = collections.Counter()
+    #Iterate through all the products:
+    for c_product in products_df['Ingredients']:
+        #Split on comma into a list - with some filtering on the way past::
+        these_ingredients = [x for x in str(c_product).split(",")
+                             if x != "nan" and
+                             len(x) <= max_key_length and
+                             len(x) >= min_key_length]
+        #Add those in the list to the dictionary for counting
+        #(can't be done as a list comprehension which is a pity)
+        for c_ingredient in these_ingredients:
+            ingredients_tally[c_ingredient] += 1
+
+    #So what we get: print the number of tails, top and bottom?
+
+    """
+    #Really this code has been superceeded already:
+    tails = 10
+    #Top:
+    print ("Top {} ingredients are:".format(tails))
+    [print (("{:<"+str(max_key_length)+"} =\t {}").format(c_ingrid,count))  for (c_ingrid,count)
+        in ingredients_tally.most_common(tails)]
+    print ("....then for the bottom {2}: ({0} to {1}): ".format(
+        len(ingredients_tally)-tails,
+        len(ingredients_tally),
+        tails))
+    #Bottom
+    [print (("{:<"+str(max_key_length)+"} =\t {}").format(c_ingrid,count)) for (c_ingrid, count)
+        in ingredients_tally.most_common()[:-tails-1:-1]]
+    #print (output_list)
+    """
+    #Same again, but in an easier to plot DataFrame:
+    ingredients_count_df = pd.DataFrame(columns=["Ingredient", "Count"])
+
+    for (c_ingrid, count) in ingredients_tally.most_common(tails):
+        print ("{} {}".format(c_ingrid,count))
+        ingredients_count_df = ingredients_count_df.append({'Ingredient':c_ingrid, 'Count':count}, ignore_index=True)
+    for (c_ingrid, count) in ingredients_tally.most_common()[:-tails - 1:-1]:
+        ingredients_count_df = ingredients_count_df.append({'Ingredient':c_ingrid, 'Count':count}, ignore_index=True)
+    print (ingredients_count_df)
+
+    sys.exit(0)
 
     print ("All done, bye-bye")
 
