@@ -26,7 +26,7 @@ print ("Loading modules:...[", end="")
 import pandas as pd
 import sys
 import re
-import seaborn
+import seaborn as sb
 import matplotlib.pyplot as plt
 import ingredients as ind
 import collections # Because not Perl and Hash Arrays...
@@ -35,10 +35,11 @@ print ("]....Done")
 manual_ingredients_tag = "Manual Ingredients"
 combined_matrix_fname = "all_products.txt"
 raw_counts_html_fname = "product_ingredients_status.html"
-ingredients_status_graph_fname = "Ingredients_Status.png"
+ingredients_status_graph_fname = "ingredients_status.png"
 ingredient_counts_html_fname = "ingredients_counts.html"
+ingredients_counts_graph_fname = "ingredients_counts.png"
 #The number of items to report from the head and 'tail' of the ingredient usage count table:
-tails = 6
+tails = 10
 
 """
 Start Code Proper
@@ -111,28 +112,30 @@ def main():
     graph_table["Product Class"] = group_counts_df["Product Class"]
     graph_table["Parsed Automatically"] = group_counts_df[
         "Ingredients Present"]  # - group_counts_df["Ingredients Present"])
-    graph_table["Ingredients Added Manually"] = group_counts_df["Ingredients Added Manually"]
+    graph_table["Added Manually"] = group_counts_df["Ingredients Added Manually"]
     graph_table["Absent"] = (group_counts_df["Number of Products"] - \
                              group_counts_df["Ingredients Present"] -
                              group_counts_df["Ingredients Added Manually"])
     # Clean up the product labels:
     graph_table["Product Class"] = graph_table["Product Class"].apply(clean_up)
-
+    #Output 1/2: Write HTML to FS
     ind.write_df_to_pretty_table(graph_table, ingredient_counts_html_fname, "")
 
-    # Plot the chart:
+    #Output 2/2: Chart output:
+    # Tweak the axises, colors etc. but otherwise render the DF as prepared and completly.
+    sb.set(style="whitegrid")
     bar_colors = ["#80dd80", "#5555FF", "#888888"]
     axis_gtp = graph_table.plot.bar(x="Product Class",
-                                    y=["Parsed Automatically", "Ingredients Added Manually", "Absent"],
+                                    y=["Parsed Automatically", "Added Manually", "Absent"],
                                     stacked=True,
                                     title="Completeness of Ingredient List Datasets",
-                                    position=0.8,
-                                    figsize=(7, 6),
+                                    position=0.7,
+                                    figsize=(10, 6),
                                     color=bar_colors)
 
-    # Tweak the axises:
     axis_gtp.set_ylabel("Number of Products")
-    plt.subplots_adjust(bottom=0.3)
+    axis_gtp.set_xlabel("")
+    plt.subplots_adjust(bottom=0.4)
     plt.savefig(ingredients_status_graph_fname)
 
     # For kicks we might as well have a look:
@@ -190,21 +193,34 @@ def main():
     for (c_ingrid, count) in ingredients_tally.most_common(tails):
         print ("{} {}".format(c_ingrid,count))
         ingredients_count_df = ingredients_count_df.append({'Ingredient':c_ingrid, 'Count':count}, ignore_index=True)
-    for (c_ingrid, count) in ingredients_tally.most_common()[:-tails - 1:-1]:
-        ingredients_count_df = ingredients_count_df.append({'Ingredient':c_ingrid, 'Count':count}, ignore_index=True)
+    # for (c_ingrid, count) in ingredients_tally.most_common()[:-tails - 1:-1]:
+    #     ingredients_count_df = ingredients_count_df.append({'Ingredient':c_ingrid, 'Count':count}, ignore_index=True)
     print (ingredients_count_df)
 
-    # Send off the data for rendering to HTML in the 'House Style'
+    #Output 1/2: HTML rendered to FS in the 'House Style'
     if ind.write_df_to_pretty_table(ingredients_count_df, ingredient_counts_html_fname,
                                     "Most and Least Frequently Observed Data Terms"):
         print ("ERROR: in HTML table rendering to: '{}'".format(ingredient_counts_html_fname))
+    #Output 2/2: As a graph:
+    sb.set(style="whitegrid")
+    bar_colors = ["#80dd80"]
+    axis_cnts = ingredients_count_df.plot.bar(x="Ingredient",
+                                    y="Count",
+                                    title="Frequency Counts of the Ingredients Observed ("
+                                    +str(tails)+" most and least frequent)",
+                                    position=0.7,
+                                    figsize=(10, 6),
+                                    color=bar_colors)
 
+    axis_cnts.set_ylabel("Count")
+    axis_cnts.set_xlabel("")
+    plt.subplots_adjust(bottom=0.4)
+
+    #plt.show()
+    plt.savefig(ingredients_counts_graph_fname)
     #Plot a bar chart of the data:
     # ax_ics = ingredients_count_df.bar(x='Ingredient', y='Count', rot=0)
     # plt.show()
-
-
-    sys.exit(0)
 
     print ("All done, bye-bye")
 
