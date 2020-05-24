@@ -22,37 +22,23 @@ Ingredients >x and <y characters in length are excluded as are missing values (n
 
 
 """
+print ("Loading modules:...[", end="")
 import pandas as pd
 import sys
 import re
+import seaborn
 import matplotlib.pyplot as plt
 import ingredients as ind
 import collections # Because not Perl and Hash Arrays...
-
+print ("]....Done")
 #User servicable parts:
 manual_ingredients_tag = "Manual Ingredients"
 combined_matrix_fname = "all_products.txt"
-html_output_file_name = "product_ingredients_status.html"
+raw_counts_html_fname = "product_ingredients_status.html"
 Ingredients_Status_fname = "Ingredients_Status.png"
+ingredient_counts_html_fname = "ingredients_counts"
 
-# Couple of Helper functions
-def clean_up(name):
-    """
-    Changes the "_" to spaces and capitalises the string to titlecase:
-    "foo_bar" becomes: "Foo Bar"
-    """
-    #Convert undersco
-    name = re.sub(re.compile('_'),' ', name)
-    return name.title()
-
-def hack_CSS_table (css):
-    """
-    Swaps over the location of the table tag and the CSS ID
-    "# CSSIDandlongwithit table {"
-    """
-    return (re.sub("#(.*?) table", r"#\1", css))
-
-
+tails = 6
 
 """
 Start Code Proper
@@ -60,8 +46,6 @@ Start Code Proper
 Read the data in from - presumably - the combined tables.
 """
 def main():
-
-
     # Read the data in:
     try:
         products_df = pd.read_csv(combined_matrix_fname, sep="\t")
@@ -115,16 +99,17 @@ def main():
     # Use the styles defined in our common module:
     df_style_obj.set_table_styles(ind.get_CSS_table_styles_dictionary())
     df_style_obj.hide_index()
-
+    if ind.write_df_to_pretty_table(group_counts_df, raw_counts_html_fname, figure_caption):
+        print ("Error in HTML table rendering to: '{}'".format(raw_counts_html_fname))
     # Render to a string first as we need to back-hack the table CSS (yuck, yuck):
-    table_as_html = hack_CSS_table(df_style_obj.render())
-
-    # Now write the file out as HTML
-    file2 = open(html_output_file_name, "w+")
-    file2.write(table_as_html)
-    # For neatnees
-    file2.close()
-
+    # table_as_html = hack_CSS_table(df_style_obj.render())
+    #
+    # # Now write the file out as HTML
+    # file2 = open(raw_counts_html_output_fname, "w+")
+    # file2.write(table_as_html)
+    # # For neatnees
+    # file2.close()
+    sys.exit(0)
     """
     Pretty Print 3/3: The HTML table of the processed count data and a chart to go with it:
     """
@@ -147,6 +132,8 @@ def main():
     # Clean up the product labels:
     graph_table["Product Class"] = graph_table["Product Class"].apply(clean_up)
 
+    ind.write_df_to_pretty_table(graph_table, ingredient_counts_html_fname)
+
     # Plot the chart:
     bar_colors = ["#80dd80", "#5555FF", "#888888"]
     axis_gtp = graph_table.plot.bar(x="Product Class",
@@ -157,7 +144,7 @@ def main():
                                     figsize=(7, 6),
                                     color=bar_colors)
 
-    # Tweak the axeses:
+    # Tweak the axises:
     axis_gtp.set_ylabel("Number of Products")
     plt.subplots_adjust(bottom=0.3)
     plt.savefig(Ingredients_Status_fname)
@@ -220,11 +207,28 @@ def main():
     for (c_ingrid, count) in ingredients_tally.most_common()[:-tails - 1:-1]:
         ingredients_count_df = ingredients_count_df.append({'Ingredient':c_ingrid, 'Count':count}, ignore_index=True)
     print (ingredients_count_df)
+    #....render to html prsumably at some point.
+
+    #Plot a bar chart of the data:
+    # ax_ics = ingredients_count_df.bar(x='Ingredient', y='Count', rot=0)
+    # plt.show()
+
 
     sys.exit(0)
 
     print ("All done, bye-bye")
 
+
+#Helper functions
+
+def clean_up(name):
+    """
+    Changes the "_" to spaces and capitalises the string to titlecase:
+    "foo_bar" becomes: "Foo Bar"
+    """
+    #Convert undersco
+    name = re.sub(re.compile('_'),' ', name)
+    return name.title()
 
 #This construct to allow functions in any order:
 if __name__ == '__main__':
