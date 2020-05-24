@@ -35,9 +35,9 @@ print ("]....Done")
 manual_ingredients_tag = "Manual Ingredients"
 combined_matrix_fname = "all_products.txt"
 raw_counts_html_fname = "product_ingredients_status.html"
-Ingredients_Status_fname = "Ingredients_Status.png"
-ingredient_counts_html_fname = "ingredients_counts"
-
+ingredients_status_graph_fname = "Ingredients_Status.png"
+ingredient_counts_html_fname = "ingredients_counts.html"
+#The number of items to report from the head and 'tail' of the ingredient usage count table:
 tails = 6
 
 """
@@ -90,26 +90,12 @@ def main():
     Pretty Print 1/3: The HTML formatted table of the data as downloaded and cleaned.
     These are simple counts.
     """
-    figure_caption = "Completeness of Data Download of Ingredients"
 
-    # As we work a lot with the style object - create a short cut:
-    df_style_obj = group_counts_df.style
-    df_style_obj.set_caption(figure_caption)
+    # Send off the data for rendering to HTML in the 'House Style'
+    if ind.write_df_to_pretty_table(group_counts_df, raw_counts_html_fname,
+                                    "Completeness of Data Download of Ingredients"):
+        print ("ERROR: in HTML table rendering to: '{}'".format(raw_counts_html_fname))
 
-    # Use the styles defined in our common module:
-    df_style_obj.set_table_styles(ind.get_CSS_table_styles_dictionary())
-    df_style_obj.hide_index()
-    if ind.write_df_to_pretty_table(group_counts_df, raw_counts_html_fname, figure_caption):
-        print ("Error in HTML table rendering to: '{}'".format(raw_counts_html_fname))
-    # Render to a string first as we need to back-hack the table CSS (yuck, yuck):
-    # table_as_html = hack_CSS_table(df_style_obj.render())
-    #
-    # # Now write the file out as HTML
-    # file2 = open(raw_counts_html_output_fname, "w+")
-    # file2.write(table_as_html)
-    # # For neatnees
-    # file2.close()
-    sys.exit(0)
     """
     Pretty Print 3/3: The HTML table of the processed count data and a chart to go with it:
     """
@@ -132,7 +118,7 @@ def main():
     # Clean up the product labels:
     graph_table["Product Class"] = graph_table["Product Class"].apply(clean_up)
 
-    ind.write_df_to_pretty_table(graph_table, ingredient_counts_html_fname)
+    ind.write_df_to_pretty_table(graph_table, ingredient_counts_html_fname, "")
 
     # Plot the chart:
     bar_colors = ["#80dd80", "#5555FF", "#888888"]
@@ -147,9 +133,9 @@ def main():
     # Tweak the axises:
     axis_gtp.set_ylabel("Number of Products")
     plt.subplots_adjust(bottom=0.3)
-    plt.savefig(Ingredients_Status_fname)
+    plt.savefig(ingredients_status_graph_fname)
 
-    # For kicks we might as well have the
+    # For kicks we might as well have a look:
     #plt.show(block=True)
 
     """
@@ -207,7 +193,11 @@ def main():
     for (c_ingrid, count) in ingredients_tally.most_common()[:-tails - 1:-1]:
         ingredients_count_df = ingredients_count_df.append({'Ingredient':c_ingrid, 'Count':count}, ignore_index=True)
     print (ingredients_count_df)
-    #....render to html prsumably at some point.
+
+    # Send off the data for rendering to HTML in the 'House Style'
+    if ind.write_df_to_pretty_table(ingredients_count_df, ingredient_counts_html_fname,
+                                    "Most and Least Frequently Observed Data Terms"):
+        print ("ERROR: in HTML table rendering to: '{}'".format(ingredient_counts_html_fname))
 
     #Plot a bar chart of the data:
     # ax_ics = ingredients_count_df.bar(x='Ingredient', y='Count', rot=0)

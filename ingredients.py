@@ -60,7 +60,6 @@ def write_df_to_pretty_table(df_passed, out_fname, caption=None):
     internal_styler.set_table_styles(get_CSS_table_styles_dictionary())
     internal_styler.hide_index()
     if caption != None:
-        print ("Setting caption to: '{}'".format(caption))
         internal_styler.set_caption(caption)
 
     table_as_html = hack_CSS_table(internal_styler.render())
