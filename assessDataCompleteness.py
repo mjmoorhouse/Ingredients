@@ -153,10 +153,10 @@ def main():
 
     max_key_length = 30
     min_key_length = 3
-    #In Perl this would be built in?
-
     #Create the tally:
     ingredients_tally = collections.Counter()
+    #In Perl this would be built in?
+
     #Iterate through all the products:
     for c_product in products_df['Ingredients']:
         #Split on comma into a list - with some filtering on the way past::
@@ -169,30 +169,20 @@ def main():
         for c_ingredient in these_ingredients:
             ingredients_tally[c_ingredient] += 1
 
-    #So what we get: print the number of tails, top and bottom?
-
-    """
-    #Really this code has been superceeded already:
-    tails = 10
-    #Top:
-    print ("Top {} ingredients are:".format(tails))
-    [print (("{:<"+str(max_key_length)+"} =\t {}").format(c_ingrid,count))  for (c_ingrid,count)
-        in ingredients_tally.most_common(tails)]
-    print ("....then for the bottom {2}: ({0} to {1}): ".format(
-        len(ingredients_tally)-tails,
-        len(ingredients_tally),
-        tails))
-    #Bottom
-    [print (("{:<"+str(max_key_length)+"} =\t {}").format(c_ingrid,count)) for (c_ingrid, count)
-        in ingredients_tally.most_common()[:-tails-1:-1]]
-    #print (output_list)
-    """
-    #Same again, but in an easier to plot DataFrame:
+    #So what we get: print the number of tails, top and bottom easier to plot DataFrame:
     ingredients_count_df = pd.DataFrame(columns=["Ingredient", "Count"])
+    ingredients_count_df['Ingredient'] = ingredients_tally.keys()
+    ingredients_count_df['Count'] = ingredients_tally.values()
+    ingredients_count_df.sort_values(by=['Count'],inplace=True, ascending=False, ignore_index=True)
+    print ("Sorted ingredients:")
+    print (ingredients_count_df.head(10))
+    sys.exit(0)
+
 
     for (c_ingrid, count) in ingredients_tally.most_common(tails):
         print ("{} {}".format(c_ingrid,count))
         ingredients_count_df = ingredients_count_df.append({'Ingredient':c_ingrid, 'Count':count}, ignore_index=True)
+    #These would add the 'tail's number to the bottom of the list:
     # for (c_ingrid, count) in ingredients_tally.most_common()[:-tails - 1:-1]:
     #     ingredients_count_df = ingredients_count_df.append({'Ingredient':c_ingrid, 'Count':count}, ignore_index=True)
     print (ingredients_count_df)
@@ -206,8 +196,8 @@ def main():
     bar_colors = ["#80dd80"]
     axis_cnts = ingredients_count_df.plot.bar(x="Ingredient",
                                     y="Count",
-                                    title="Frequency Counts of the Ingredients Observed ("
-                                    +str(tails)+" most and least frequent)",
+                                    title="Counts of the "+str(tails)+
+                                    " Most Frequently Observed Ingredients",
                                     position=0.7,
                                     figsize=(10, 6),
                                     color=bar_colors)
@@ -215,18 +205,18 @@ def main():
     axis_cnts.set_ylabel("Count")
     axis_cnts.set_xlabel("")
     plt.subplots_adjust(bottom=0.4)
-
-    #plt.show()
     plt.savefig(ingredients_counts_graph_fname)
-    #Plot a bar chart of the data:
-    # ax_ics = ingredients_count_df.bar(x='Ingredient', y='Count', rot=0)
-    # plt.show()
+
+    """
+    A re-casting of the above dataset: just a simple 'N' versus rank index.
+    """
+    print ("XXXX")
+    counts_inorder_df = pd.DataFrame(ingredients_count_df.sort_values(by=['Count']))
+    print (counts_inorder_df.head())
 
     print ("All done, bye-bye")
 
-
 #Helper functions
-
 def clean_up(name):
     """
     Changes the "_" to spaces and capitalises the string to titlecase:
