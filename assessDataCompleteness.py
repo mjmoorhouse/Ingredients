@@ -36,10 +36,10 @@ manual_ingredients_tag = "Manual Ingredients"
 combined_matrix_fname = "all_products.txt"
 raw_counts_html_fname = "product_ingredients_status.html"
 ingredients_status_graph_fname = "ingredients_status.png"
-ingredient_counts_html_fname = "ingredients_counts.html"
+top_ingred_counts_fname = "ingredients_counts.html"
 ingredients_counts_graph_fname = "ingredients_counts.png"
 #The number of items to report from the head and 'tail' of the ingredient usage count table:
-tails = 10
+top_n_ingredients = 10
 
 """
 Start Code Proper
@@ -119,7 +119,7 @@ def main():
     # Clean up the product labels:
     graph_table["Product Class"] = graph_table["Product Class"].apply(clean_up)
     #Output 1/2: Write HTML to FS
-    ind.write_df_to_pretty_table(graph_table, ingredient_counts_html_fname, "")
+    ind.write_df_to_pretty_table(graph_table, top_ingred_counts_fname, "")
 
     #Output 2/2: Chart output:
     # Tweak the axises, colors etc. but otherwise render the DF as prepared and completly.
@@ -169,34 +169,30 @@ def main():
         for c_ingredient in these_ingredients:
             ingredients_tally[c_ingredient] += 1
 
-    #So what we get: print the number of tails, top and bottom easier to plot DataFrame:
+    #Take the filtered data and create a dataframe out of it:
     ingredients_count_df = pd.DataFrame(columns=["Ingredient", "Count"])
     ingredients_count_df['Ingredient'] = ingredients_tally.keys()
     ingredients_count_df['Count'] = ingredients_tally.values()
     ingredients_count_df.sort_values(by=['Count'],inplace=True, ascending=False, ignore_index=True)
-    print ("Sorted ingredients:")
-    print (ingredients_count_df.head(10))
-    sys.exit(0)
 
-
-    for (c_ingrid, count) in ingredients_tally.most_common(tails):
-        print ("{} {}".format(c_ingrid,count))
-        ingredients_count_df = ingredients_count_df.append({'Ingredient':c_ingrid, 'Count':count}, ignore_index=True)
-    #These would add the 'tail's number to the bottom of the list:
-    # for (c_ingrid, count) in ingredients_tally.most_common()[:-tails - 1:-1]:
-    #     ingredients_count_df = ingredients_count_df.append({'Ingredient':c_ingrid, 'Count':count}, ignore_index=True)
-    print (ingredients_count_df)
+    """
+    Prepare the 'Top 10 graph':
+    (and associated table first as HTML)
+    """
+    top_ingredients_df = ingredients_count_df[0:top_n_ingredients]
+    print (top_ingredients_df)
 
     #Output 1/2: HTML rendered to FS in the 'House Style'
-    if ind.write_df_to_pretty_table(ingredients_count_df, ingredient_counts_html_fname,
-                                    "Most and Least Frequently Observed Data Terms"):
-        print ("ERROR: in HTML table rendering to: '{}'".format(ingredient_counts_html_fname))
+    if ind.write_df_to_pretty_table(top_ingredients_df, top_ingred_counts_fname,
+                                    "Counts of "+ str(top_n_ingredients) + " Most Frequently Observed Ingredients"):
+        print ("ERROR: in HTML table rendering to: '{}'".format(top_ingred_counts_fname))
+
     #Output 2/2: As a graph:
     sb.set(style="whitegrid")
     bar_colors = ["#80dd80"]
-    axis_cnts = ingredients_count_df.plot.bar(x="Ingredient",
+    axis_cnts = top_ingredients_df.plot.bar(x="Ingredient",
                                     y="Count",
-                                    title="Counts of the "+str(tails)+
+                                    title="Counts of the " + str(top_n_ingredients) +
                                     " Most Frequently Observed Ingredients",
                                     position=0.7,
                                     figsize=(10, 6),
@@ -207,12 +203,7 @@ def main():
     plt.subplots_adjust(bottom=0.4)
     plt.savefig(ingredients_counts_graph_fname)
 
-    """
-    A re-casting of the above dataset: just a simple 'N' versus rank index.
-    """
-    print ("XXXX")
-    counts_inorder_df = pd.DataFrame(ingredients_count_df.sort_values(by=['Count']))
-    print (counts_inorder_df.head())
+
 
     print ("All done, bye-bye")
 
