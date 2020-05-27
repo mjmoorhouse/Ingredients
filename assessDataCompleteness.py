@@ -38,6 +38,9 @@ raw_counts_html_fname = "product_ingredients_status.html"
 ingredients_status_graph_fname = "ingredients_status.png"
 top_ingred_counts_fname = "ingredients_counts.html"
 ingredients_counts_graph_fname = "ingredients_counts.png"
+ingredients_rankorder_graph_fname = "ingredients_rank_order.png"
+#Note this is just a simple CSV / TXT not HTML: we have 'top_ingred_counts_fname' for the top 'n' (top_n_ingredients)
+ingredients_rankorder_table_fname = "ingredients_rank_order.txt"
 #The number of items to report from the head and 'tail' of the ingredient usage count table:
 top_n_ingredients = 10
 
@@ -179,31 +182,50 @@ def main():
     Prepare the 'Top 10 graph':
     (and associated table first as HTML)
     """
+
     top_ingredients_df = ingredients_count_df[0:top_n_ingredients]
     print (top_ingredients_df)
-
+    n_total_ingredients = len(ingredients_count_df)
     #Output 1/2: HTML rendered to FS in the 'House Style'
     if ind.write_df_to_pretty_table(top_ingredients_df, top_ingred_counts_fname,
-                                    "Counts of "+ str(top_n_ingredients) + " Most Frequently Observed Ingredients"):
+                                    "Counts of "+ str(top_n_ingredients) + " Most Frequently Observed Ingredients"
+                                    + " (of " + str(n_total_ingredients) + " total)"):
         print ("ERROR: in HTML table rendering to: '{}'".format(top_ingred_counts_fname))
 
     #Output 2/2: As a graph:
     sb.set(style="whitegrid")
     bar_colors = ["#80dd80"]
-    axis_cnts = top_ingredients_df.plot.bar(x="Ingredient",
+    top_ing_axs = top_ingredients_df.plot.bar(x="Ingredient",
                                     y="Count",
                                     title="Counts of the " + str(top_n_ingredients) +
-                                    " Most Frequently Observed Ingredients",
+                                    " Most Frequently Observed Ingredients (cf. " + str(n_total_ingredients) + " total)",
                                     position=0.7,
                                     figsize=(10, 6),
                                     color=bar_colors)
 
-    axis_cnts.set_ylabel("Count")
-    axis_cnts.set_xlabel("")
+    top_ing_axs.set_ylabel("Count")
+
     plt.subplots_adjust(bottom=0.4)
     plt.savefig(ingredients_counts_graph_fname)
 
+    all_ing_axs = ingredients_count_df.reset_index().plot(x="index", y="Count",
+                            title="Frequency of All Ingredients in Rank Order (" + str(n_total_ingredients) + " of)")
+    # Adapt the plot - titles & ticks:
+    plt.yscale("log")
+    plt.yticks([1,10,50,100,200,500,1000])
+    from matplotlib.ticker import ScalarFormatter
+    all_ing_axs.yaxis.set_major_formatter(ScalarFormatter())
+    all_ing_axs.set_ylabel("Count")
+    all_ing_axs.set_xlabel("Rank Order")
+    #Save the graph:
+    plt.savefig(ingredients_rankorder_graph_fname)
+    #Save the underlying dataframe (though as CSV as probably nobody cares):
+    print("Writing out rank order table as : '{}'".format(ingredients_rankorder_table_fname))
+    ingredients_count_df.to_csv(ingredients_rankorder_table_fname, sep='\t', index=True)
 
+    """
+    Now an x-y plot of all the ingredients.
+    """
 
     print ("All done, bye-bye")
 
