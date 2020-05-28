@@ -37,7 +37,7 @@ def main():
     except:
         sys.exit("Could not load pandas module - check installation and environment is active")
     #Declare the list storing the IDs explictly and the 'columns names' based on the none-extension parts of the filenames
-    IDs_list = []
+    IDs_list = list()
     tag_list = list()
     # Set / Test the working directory; stop if it doesn't exist:
     data_location = os.getcwd() + "\\Cleaned"
@@ -79,8 +79,15 @@ def main():
         these_product_ids = data_table['Product ID']
         # Are the products unique?  Really they need to be for a fair count:
         if Check_Duplicates(these_product_ids):
-            print("Duplicates in list found ({}) of".format(Check_Duplicates(these_product_ids)))
-            continue
+            n_rows_before = len(data_table.index)
+            #print ("Length before de-duplication\t: '{}'".format(n_rows_before))
+            data_table.drop_duplicates(inplace=True)
+            n_rows_after = len(data_table.index)
+            print("Duplicates in list found ({})\t (duplicate found: {}, hence from {} to {})".
+                  format(c_file_name, n_rows_before-n_rows_after,n_rows_before,n_rows_after))
+            #print("Length after de-duplication\t: '{}'".format(n_rows_after))
+            #sys.exit(0)
+            #continue
 
         #Build the tag name (File Base Name + number of items):
         re_match = re.search(re.compile('(?P<tag>^.+)\.'), c_file_name)
