@@ -26,7 +26,6 @@ contains_re = re.compile('(also )*([Cc]ontain)s* *(trace)*s* *(of)*:*')
 contains_result_str = 'Contain:'
 delimter_re = re.compile('(and )|(\& )')
 delimter_result_str = ', '
-ingrid_re = re.compile('(Ingredients)* *(INGREDIENTS)* *(LIST)*:* *', re.IGNORECASE)
 
 weight_re = re.compile('(?P<weight>[\d.]+)(?P<units>[kK]*[Gg])')
 
@@ -114,20 +113,69 @@ def main():
         # 10) Now save the cleaned version of the file:
         raw_results_df.to_csv(c_file_op_path, sep='\t', index=False)
 
-
 def clean_ingredients(ingredients_list):
     """
     Mostly applies regexs to remove the worse of the non-standard markup making keyword searches easier.
-    Very similar to Clean_Allergen();
-    this too has global dependencies for its regexes, check the code for current but:
-    ingrid_re = '(INGREDIENTS):* *'
-    "INGREDIENTS:" - yes, we know - from the start of the list.
+    Very similar to Clean_Allergen() in concept and operation
+
+    In brief the Regexs:
+    *) Remove INGREDIENTS: or similar parsing artifacts
+    *) Remove leading spaces
+    *) Remove leading trailing spaces and full stops
+    *) Remove spaces around commas
+    *) Remove ingredient percentages (i.e. beef (12%)) -> beef
+    *) Convert most brackets [] & () in lists to commas
+    *) Remove "(from " allergen markup (i.e. Lactose (from Milk) -> Lactose (Milk) - should leave only left bracket
+    *) Remove "(in varying... proportions)"
+    *) Remove "(of which...)"
+    *) Remove ("From sustainable organic production")
+    *) Remove trailing commas, full stops, spaces
+    *) Remove all ":" and "*"
+
     """
     # Check whether it is a string to attempt matching (might be NaN) - return if not
     if not isinstance(ingredients_list, str):
         return ""
-    #Apply the regex:
+    #print ("Before\t: {}"*.format(ingredients_list))
+    #Apply the regex to clean out "Ingredients:" type things:
+    ingrid_re = re.compile('(Ingredients)|(INGREDIENTS) *(LIST)*:*', re.IGNORECASE)
     ingredients_list = re.sub(ingrid_re, "", str(ingredients_list))
+    #Also spaces before / after commas: just annoying:
+    ingredients_list = re.sub(re.compile(" ,|, "), ",", ingredients_list)
+    #Any percentages we suppress: Beef Mince (12%)
+    ingredients_list = re.sub(re.compile(" *\([\d.]+%\)"), "", ingredients_list)
+
+    #Convert brackets to commas: , Sundried Tomato Sauce (2%) [Sundried Tomatoes, Toma...
+    ingredients_list = re.sub(re.compile(" *(\[).*?,"), ",", ingredients_list)
+    ingredients_list = re.sub(re.compile("(\])"), ",", ingredients_list)
+    ingredients_list = re.sub(re.compile("\]"), ",", ingredients_list)
+    #Convert opening brackets to commas: ...r, Beef Powder (Cooked Beef Fat,...
+    ingredients_list = re.sub(re.compile(" *?(\()(?!from)([\w ]+?),"),",\g<2>,", ingredients_list)
+    # Same - but the end bracket ...High Oleic Sunflower Oil),..
+    ingredients_list = re.sub(re.compile(",(?!from)([\w ]+?)\),"), ",", ingredients_list)
+    #Decompose lists into their component parts:
+    #ingredients_list = re.sub(re.compile("(.*? *\()(?:.*?,.*?\))"), "", ingredients_list)
+    # Suppress common phrases:
+    #   (in varying proportions - XXX, YYY, ZZZ)
+    ingredients_list = re.sub(re.compile("(\(in varying proportions *-*) *",re.IGNORECASE), "", ingredients_list)
+    #   (from XXX)
+    ingredients_list = re.sub(re.compile("(\(from )(\w+)\)",re.IGNORECASE), "(\g<2>)", ingredients_list)
+    #(of which xxx is Blah):
+    ingredients_list = re.sub(re.compile("\(of which.{0,6}? is.{0,15}?\)",re.IGNORECASE),"", ingredients_list)
+
+    #(*From Sustainable Organic production)
+    ingredients_list = re.sub(re.compile("From Sustainable Organic production",re.IGNORECASE), "", ingredients_list)
+    #Final cleanup of basic punctuation
+    ingredients_list = re.sub(re.compile(",$"), "", ingredients_list)
+    ingredients_list = re.sub(re.compile(",{2,}"), ",", ingredients_list)
+    # Remove any leading spaces or trailing 'full stops', spaces, colons etc:
+    ingredients_list = re.sub(re.compile("^ *?"), "", ingredients_list)
+    ingredients_list = re.sub(re.compile("\ *\.$"), "", ingredients_list)
+    ingredients_list = re.sub(re.compile("\*"), "", ingredients_list)
+    """
+    
+    """
+    #print ("After\t: {}".format(ingredients_list))
     return ingredients_list
 
 def convert_weight(weight):
