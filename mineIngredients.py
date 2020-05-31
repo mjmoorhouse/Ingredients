@@ -31,8 +31,8 @@ def main():
 
     #short_df = short_df.reindex()
     #short_df.reset_index(inplace=True, drop=True)
-    print ()
-    print (short_df)
+    # print ()
+    # print (short_df)
     #sys.exit(0)
     # print(short_df.head())
     # #Get a product list locally for now:
@@ -45,12 +45,12 @@ def main():
         #Do the search (case insensitive), add just the IDs to list (we can filter for duplicates later):
         matching_products.extend(
             short_df[short_df['Ingredients'].str.contains(c_ingredient, case=False)]['Product ID'])
-        print ("After testing for ingredient: {}\t there are {} unique product IDs".
+        print ("After testing for ingredient: '{}'\t there are '{}' unique product IDs".
                format(c_ingredient,len(matching_products)))
-    before_len = len(matching_products)
+    before_uniquing_ids = len(matching_products)
     matching_products = list(set(matching_products))
-    after_len = len(matching_products)
-    print ("Before and after: {} & {} length of list".format(before_len, after_len))
+    after_uniquing_ids = len(matching_products)
+    print ("Before and after uniquing IDs in list: {} & {} length of list".format(before_uniquing_ids, after_uniquing_ids))
 
 
 #This construct to allow functions in any order:
