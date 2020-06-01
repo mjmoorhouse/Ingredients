@@ -43,29 +43,36 @@ def get_CSS_table_styles_dictionary():
     ]
     return styles
 
-
-def write_df_to_pretty_table(df_passed, out_fname, caption=None):
+def render_df_to_html(df_passed, caption=None):
     """
-    Pass a dataframe and a filename and this routine writes it to the file system.
-    df_style_obj = group_counts_df.style
-    df_style_obj.set_caption(figure_caption)
+    Just render the Data frame passed to HTML and return it (hacking it so the styles work properly):
 
-    # Use the styles defined in our common module:
-    df_style_obj.set_table_styles(ind.get_CSS_table_styles_dictionary())
-    df_style_obj.hide_index()
+    :param df_passed: The Pandas dataframe to be rendered
+    :param caption: Optional caprion for the table
+    :return: a text string of HTML or None:
     """
     internal_df = df_passed.copy(deep=True)
     internal_styler = internal_df.style
     get_CSS_table_styles_dictionary()
     internal_styler.set_table_styles(get_CSS_table_styles_dictionary())
+    #Truncate the weight column values to 0 d.p. for output
+    internal_styler.format({'Weight':'{:g}'})
+    internal_df.fillna("")
     internal_styler.hide_index()
     if caption != None:
         internal_styler.set_caption(caption)
 
-    table_as_html = hack_CSS_table(internal_styler.render())
-
     # Render to a string first as we need to back-hack the table CSS (yuck, yuck):
     table_as_html = hack_CSS_table(internal_styler.render())
+    return table_as_html
+
+
+def write_df_to_pretty_table(df_passed, out_fname, caption=None):
+    """
+    Pass a dataframe and a filename and this routine writes it to the file system.
+    It calls the rendering routine - that also hacks the resultant HTML too.
+    """
+    table_as_html = render_df_to_html(df_passed, caption=None)
 
     # Now write the file out as HTML
     try:
