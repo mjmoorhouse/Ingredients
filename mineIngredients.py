@@ -57,19 +57,31 @@ def main():
     print (matching_products_df.columns)
     print (matching_products_df.dtypes)
 
-
-    #print(matching_products_df['Weight'])
-
+    #A little pre-rendering manipulation as this easier here (weights round to ints, supress NaN to empty (&nbsp?)
+    #than back-hacking the HTML afterwards with Regexs.
     matching_products_df.astype({'Weight':'Int64'}, copy=False)
-
-
+    matching_products_df['Comments'].fillna("",inplace=True)
 
     # Send off the data for rendering to HTML in the 'House Style'
     html_table = ind.render_df_to_html(matching_products_df)
-    print ("HTML Table is: '{}'...etc...\n'{}'".format(html_table[:500], html_table[-1000:-1]))
-
+    print ("HTML Table is: \n'{}'...etc...\n'{}'".format(html_table[:500], html_table[-2000:-1]))
     #Clean up the worst of the silliness in the HTML such as:
 
+    #a) Make the product link really a link:
+    # class="data row29 col3" >https://www.tesco.com/groceries/en-GB/products/305781649</td>
+    #->
+    # class="data row29 col3" ><A href="https://www.tesco.com/groceries/en-GB/products/305781649></a>
+    # https://www.tesco.com/groceries/en-GB/products/305781649</td>
+    # return (re.sub("#(.*?) table", r"#\1", css))
+    html_table = re.sub(r"(?:col3\" \>)(.*?)(?: *\<\/td>)",r'col3" >\n<a href="\1">\1</a></td>',html_table)
+    print("HTML Table is: \n'{}'...etc...\n'{}'".format(html_table[:500], html_table[-2000:-1]))
+
+    #
+    match_locs = re.findall(re.compile('col4" >(.*?)</td>'), html_table)
+    for c_match in match_locs:
+        print ("{}".format(c_match))
+    #print ("Match locations for the ingredient cells: {}".format(match_locs))
 #This construct to allow functions in any order:
+
 if __name__ == '__main__':
     main()
