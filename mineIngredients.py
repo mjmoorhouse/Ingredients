@@ -78,11 +78,15 @@ def main():
         #Split list on commas:
         split_ingredients = product_ingredients.split(",")
         n_ingredients = len(split_ingredients)
-        print ("{}\t = ({})\t'{}'".format(c_index, n_ingredients, product_ingredients))
-        for c_target_ingredient in query_ingredients_list:
-            for c_ingredient in split_ingredients:
-                print (" {} against {}".format(c_target_ingredient, c_ingredient))
 
+        for c_target_ingredient in query_ingredients_list:
+            this_re = re.compile("[^(]"+c_target_ingredient+"[^)]",re.IGNORECASE)
+            for c_ingredient in split_ingredients:
+                #print (" {} against {}".format(c_target_ingredient, c_ingredient), end="")
+                #Do the search:
+                if this_re.search(c_ingredient):
+                    #print ("{}\t = ({})\t'{}'".format(c_index, n_ingredients, product_ingredients))
+                    print ("\t::{} \t= {}".format(c_ingredient,c_target_ingredient))
     sys.exit(0)
     #A little pre-rendering manipulation as this easier here (weights round to ints, supress NaN to empty (&nbsp?)
     #than back-hacking the HTML afterwards with Regexs.
