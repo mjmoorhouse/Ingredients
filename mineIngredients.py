@@ -36,12 +36,12 @@ def main():
     short_df = products_df.head(30)
 
     #Get a product list locally for now:
-    c_product_list = example_product_list()
+    query_ingredients_list = example_product_list()
 
     #Create a list to store the matching product IDs as appending to Dataframes is slow:
     search_result_list = list()
 
-    for c_ingredient in c_product_list:
+    for c_ingredient in query_ingredients_list:
         #Do the search (case insensitive), add just the IDs to list (duplicates being filtered later):
         search_result_list.extend(
             short_df[short_df['Ingredients'].str.contains(c_ingredient, case=False)]['Product ID'])
@@ -57,6 +57,33 @@ def main():
     print (matching_products_df.columns)
     print (matching_products_df.dtypes)
 
+    #Add the new columns to store the ingredients match (maybe we need this?)
+    colindex_counter = 3
+    colindex = dict()
+    #Create the new columns for each ingredient we are searching for:
+    for c_ingredient in query_ingredients_list:
+        matching_products_df.insert(3,c_ingredient.title(), "")
+        #Store where we added each in a dictionary:
+        colindex[c_ingredient] = colindex_counter
+        colindex_counter = colindex_counter +1
+    print ("Columns are: {}".format(matching_products_df.columns))
+    print (colindex)
+
+    #Do matches on each product and row to build output:
+    #Do we need this at all? Redundant?
+    product_ids = matching_products_df['Product ID']
+    #Iterate down the rows of the dataframe:
+    for c_index, c_row in matching_products_df.iterrows():
+        product_ingredients = matching_products_df.iloc[c_index]['Ingredients']
+        #Split list on commas:
+        split_ingredients = product_ingredients.split(",")
+        n_ingredients = len(split_ingredients)
+        print ("{}\t = ({})\t'{}'".format(c_index, n_ingredients, product_ingredients))
+        for c_target_ingredient in query_ingredients_list:
+            for c_ingredient in split_ingredients:
+                print (" {} against {}".format(c_target_ingredient, c_ingredient))
+
+    sys.exit(0)
     #A little pre-rendering manipulation as this easier here (weights round to ints, supress NaN to empty (&nbsp?)
     #than back-hacking the HTML afterwards with Regexs.
     matching_products_df.astype({'Weight':'Int64'}, copy=False)
@@ -72,14 +99,13 @@ def main():
     #->
     # class="data row29 col3" ><A href="https://www.tesco.com/groceries/en-GB/products/305781649></a>
     # https://www.tesco.com/groceries/en-GB/products/305781649</td>
-    # return (re.sub("#(.*?) table", r"#\1", css))
     html_table = re.sub(r"(?:col3\" \>)(.*?)(?: *\<\/td>)",r'col3" >\n<a href="\1">\1</a></td>',html_table)
     print("HTML Table is: \n'{}'...etc...\n'{}'".format(html_table[:500], html_table[-2000:-1]))
 
-    #
-    match_locs = re.findall(re.compile('col4" >(.*?)</td>'), html_table)
-    for c_match in match_locs:
-        print ("{}".format(c_match))
+    # Demonstrate we can mark up columns afterwards (might not be needed?)
+    # match_locs = re.findall(re.compile('col4" >(.*?)</td>'), html_table)
+    # for c_match in match_locs:
+    #     print ("Matches are: {}".format(c_match))
     #print ("Match locations for the ingredient cells: {}".format(match_locs))
 #This construct to allow functions in any order:
 
