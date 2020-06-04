@@ -21,6 +21,7 @@ print ("]....Done")
 combined_matrix_fname = "all_products.txt"
 #Might be useful if printing to terminal, otherwise causes no harm:
 pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
 
 def example_product_list():
     """
@@ -79,7 +80,7 @@ def main():
     print ("Before and after uniquing IDs in list: {} & {} length of list".format(before_uniquing_ids, after_uniquing_ids))
 
     #Subset the matching products into a new dataframe (as we will adapt / markup) - Remember to RE-INDEX it...
-    #....otherwise iterrows will get confused and iterate row-items that aren'the there:
+    #....otherwise iterrows will get confused and iterate row-items that aren't there:
     matching_products_df = products_df[products_df['Product ID'].isin(matching_products_list)]
     matching_products_df.reset_index(inplace=True)
 
@@ -96,6 +97,7 @@ def main():
         colindex_counter = colindex_counter +1
 
     # sys.exit(0)
+
     #Iterate through the matching rows
     for c_index, c_row in matching_products_df.iterrows():
         raw_ingredients = c_row['Ingredients']
@@ -118,16 +120,21 @@ def main():
         c_productid = c_row['Product ID']
         #Test - properly this time - the ingredients we are searching for against the ingredients list:
         for c_target_ingredient in query_ingredients_list:
+            #print ("Testing '{}' Target ingredient".format(c_target_ingredient))
             this_re = re.compile("[^(]"+c_target_ingredient+"[^)]",re.IGNORECASE)
             for c_ingredient in split_ingredients:
                 #Do the search (ignoring the upper/lower casee)
                 result = this_re.search(c_ingredient, re.IGNORECASE)
+                #Result of a match is not None, so do something with it:
                 if result:
                     start, end = result.span()
+                    matching_products_df.at[c_index,c_target_ingredient.title()] = "X"
                     marked_up = c_ingredient[0:start+1]+"|"+c_target_ingredient+"|"+c_ingredient[end-1:]
-                    print ("{}:\t [{} - {}] (product '{}') as marked up: '{}'".
-                           format(c_target_ingredient,start,end, c_productid, marked_up))
 
+                    print ("{}:\t [{} - {}] (product '{}' on row {}) as marked up: '{}'".
+                           format(c_target_ingredient,start,end, c_productid, c_index, marked_up))
+
+    print (matching_products_df)
     """
     HTML Table rendering:
     """
