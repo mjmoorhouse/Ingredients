@@ -141,7 +141,7 @@ def clean_ingredients(ingredients_list):
     #Apply the regex to clean out "Ingredients:" type things:
     ingrid_re = re.compile('(Ingredients)|(INGREDIENTS) *(LIST)*:*', re.IGNORECASE)
     ingredients_list = re.sub(ingrid_re, "", str(ingredients_list))
-    ingredients_list = re.sub(re.compile("LIST:* *[\n\r]+"), "", ingredients_list)
+    ingredients_list = re.sub(re.compile("LIST *:* *[\n\r]+"), "", ingredients_list)
     #Also spaces before / after commas: just annoying:
     ingredients_list = re.sub(re.compile(" ,|, "), ",", ingredients_list)
     #Any percentages we suppress: Beef Mince (12%)
@@ -174,6 +174,7 @@ def clean_ingredients(ingredients_list):
     ingredients_list = re.sub(re.compile("^ *?"), "", ingredients_list)
     ingredients_list = re.sub(re.compile("\ *\.$"), "", ingredients_list)
     ingredients_list = re.sub(re.compile("\*"), "", ingredients_list)
+    ingredients_list = re.sub(re.compile("^ *: *"), "", ingredients_list)
 
     #print ("After\t: {}".format(ingredients_list))
     return ingredients_list
