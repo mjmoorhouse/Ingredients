@@ -174,9 +174,7 @@ def clean_ingredients(ingredients_list):
     ingredients_list = re.sub(re.compile("^ *?"), "", ingredients_list)
     ingredients_list = re.sub(re.compile("\ *\.$"), "", ingredients_list)
     ingredients_list = re.sub(re.compile("\*"), "", ingredients_list)
-    """
-    
-    """
+
     #print ("After\t: {}".format(ingredients_list))
     return ingredients_list
 
