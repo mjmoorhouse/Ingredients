@@ -131,6 +131,7 @@ def clean_ingredients(ingredients_list):
     *) Remove ("From sustainable organic production")
     *) Remove trailing commas, full stops, spaces
     *) Remove all ":" and "*"
+    *) Remove "LIST:\n\n\n" noise:
 
     """
     # Check whether it is a string to attempt matching (might be NaN) - return if not
@@ -140,6 +141,7 @@ def clean_ingredients(ingredients_list):
     #Apply the regex to clean out "Ingredients:" type things:
     ingrid_re = re.compile('(Ingredients)|(INGREDIENTS) *(LIST)*:*', re.IGNORECASE)
     ingredients_list = re.sub(ingrid_re, "", str(ingredients_list))
+    ingredients_list = re.sub(re.compile("LIST:* *[\n\r]+"), "", ingredients_list)
     #Also spaces before / after commas: just annoying:
     ingredients_list = re.sub(re.compile(" ,|, "), ",", ingredients_list)
     #Any percentages we suppress: Beef Mince (12%)
