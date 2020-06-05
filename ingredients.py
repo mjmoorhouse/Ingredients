@@ -63,7 +63,7 @@ def get_CSS_table_styles_dictionary():
                                        ("width","100%"),
                                        ("border-spacing", "0"),
                                        ("padding","0"),
-                                       ("border-collapse","collapse")]),
+                                       ("border-collapse","separate")]),
         dict(selector="td", props =[("text-align", "center"),
                                     ("padding","0px"),
                                     ("font-family", "\"Lucida Console\", Courier, monospace"),
@@ -94,27 +94,31 @@ def get_CSS_table_styles_dictionary():
                                              ("color", "White"),
                                              ("border-right", "2px solid #000"),
                                              ("border-bottom","2px solid #000"),
-                                             ("text-align", "center")]),
-        #Product ID we have done above and is very special being the row header, but set the columns widths
-        dict(selector=".col1", props=[("width", "20em")]), #Product Name
-        dict(selector=".col2", props=[("width", "3em")]), #URL
-        dict(selector=".col3", props=[("width", "10em")]), #Allergens
-        dict(selector=".col4", props=[("width", "4em")]),  # Weight
-        dict(selector=".col5 .col6", props=[("width", "10em")]), # Source
-        dict(selector=".col5.data .col6.data", props=[("font-size", "75%")]),
-        # col 7 and higher are ingredient matches:...so we create this tag to let the Python code to fill them in:
-        dict(selector=".COL_REPLACE_TAG.data", props=[("background-color", "oldlace")])  # Weight
-        # dict(selector=".col3.data", props=[("font-size", "50%"),
+                                             ("text-align", "center")])
     ]
     return styles
 
-def render_df_to_html(df_passed, caption=None, extra_css=None):
+def get_table_id(html_table):
+    """
+    parses the table id out of text strings like this: 
+    <style  type="text/css" >
+    #T_26afb0c8_a753_11ea_844b_28f10e424db7 {
+    
+    returns either the ID string or empty 
+    """
+    # First get the Weird Table ID:
+    URL_colindex_groups = re.search(r'>\n\s+#(.*?)\s+{', html_table)
+    if URL_colindex_groups:
+        return URL_colindex_groups.group(1)
+    else:
+        return ""
+
+def render_df_to_html(df_passed, caption=None):
     """
     Just render the Data frame passed to HTML and return it (hacking it so the styles work properly):
 
     :param df_passed: The Pandas dataframe to be rendered
     :param caption: Optional caption for the table
-    :extra_css: Optional extra CSS style to replace the COL_REPLACE_TAG with
     :return: a text string of HTML or None:
     """
     #Take a copy to work on (deep ensures it is a 'copy by value' so we can't hurt the original)

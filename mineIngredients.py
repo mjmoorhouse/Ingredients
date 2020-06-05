@@ -13,23 +13,48 @@ print ("Loading modules:...[", end="")
 import pandas as pd
 import sys
 import re
-import numpy as np
 import ingredients as ind
-import math
 print ("]....Done")
 #User servicable parts:
 combined_matrix_fname = "all_products.txt"
-#Might be useful if printing to terminal, otherwise causes no harm:
+#This is the extra CSS used for rendering the table:
+extra_css = """
+    #TABLE_ID .col1 {
+      width: 15em;
+}    
+    #TABLE_ID .col2 {
+      width: 3em;
+}    
+    #TABLE_ID .col3 {
+      width: 10em;
+      font-size:  75%;
+}    
+    #TABLE_ID .col4 {
+      width: 4em;
+}    
+    #TABLE_ID .col5.data, .col6.data{
+    word-break: break-all;
+    font-size: 75%;
+      width: 10em;
+}
+    #TABLE_ID EXTRA_COLS {
+    word-break: break-all;
+    border-bottom: 1px solid #AAA;
+      width: 15em;
+}
+"""
+
+#Might be useful if printing dataframes to terminal, otherwise causes no harm:
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
-
 def example_product_list():
     """
     Really simple helper function to fix/fake the search terms:
     :return:
     """
-    return ["Salt"]
-    #return ["milk", "whey", "Lactose","Salt"]
+    #return ["Salt"]
+    return ["milk", "whey", "Lactose","Salt"]
+    #return ["milk","Salt"]
 
 def main():
     """
@@ -58,37 +83,29 @@ def main():
 
     print ("There are '{}' rows and columns in the 'matching_products' Data Frame".format(products_df.shape))
     #sys.exit(0)
-    #Add the new columns to store the ingredients match (we don't need this?)
-    colindex_counter = 3
-    colindex = dict()
+
     #Create the new columns for each ingredient we are searching for:
     for c_ingredient in query_ingredients_list:
         products_df.insert(products_df.shape[1],c_ingredient.title(), "")
-        #Store where we added each in a dictionary:
-        colindex[c_ingredient] = colindex_counter
-        colindex_counter = colindex_counter +1
 
-    #Basically everything that doesn't match:
+    #To store the products that don not match:
     product_ids_to_remove = list()
+
     #Store the 'problematic ingredients' that can't be split on commas
     #  - likely this is because they are missing and "NaN"
     problematic_ingredients = list()
-    #Iterate through the matching rows
+
+    #Iterate through the matching rows:
     for c_index, c_row in products_df.iterrows():
         this_product_id= c_row['Product ID']
         raw_ingredients = c_row['Ingredients']
-        # Split list on commas for indvidual ingredients:
+        # Split list on commas for individual ingredients:
         try:
             split_ingredients = raw_ingredients.split(",")
         except:
             problematic_ingredients.append(raw_ingredients)
             product_ids_to_remove.append(c_index)
             continue
-            # print (c_row)
-            # print (raw_ingredients)
-            # sys.exit(0)
-        #As we use this a lot:
-        c_productid = c_row['Product ID']
         #When we find a  match: flip this 'bit' to prevent the product getting added to the removal list:
         no_match_marker = True
 
@@ -126,6 +143,7 @@ def main():
     print ("Hence this many products matches and will be outputted: {}".format(n_matching_products))
 
     #Just remove this column for printout purposes temporarally:
+    #(We might want to add this back in at some point to give context; not now)
     products_df.drop(columns='Ingredients',inplace=True)
     #print (products_df.head())
 
@@ -142,6 +160,11 @@ def main():
     html_table = ind.render_df_to_html(products_df,
                     "Results of {} products search of '{}'".
                     format(str(n_matching_products), str(query_ingredients_list)))
+    #Add in the extra CSS for this particular table:
+    #First - before we manipulate anything too much get the table ID:
+    table_id = ind.get_table_id(html_table)
+    print ("Table ID: '{}'".format(table_id))
+    #This allows us to add back in the extra CSS needed for this table:
 
     #Clean up the worst of the silliness in the HTML such as:
 
@@ -156,6 +179,24 @@ def main():
     print ("The URL column determined as '{}'".format(URL_colindex))
     html_table = re.sub(r"(?:col"+str(URL_colindex)+"\" \>)(.*?)(?: *\<\/td>)",
                         r'col3" >\n<a href="\1">link</a></td>',html_table)
+
+    #Add in the specific CSS formatting for this table over the default just before the "</style>" tag:
+    #See Start of program for the actual text:
+    #First add in the table IDs:
+    temp_css_string = extra_css.replace("TABLE_ID",table_id)
+
+    #Next build and format the extra 'Ingredient' columns:
+    #Use a list comprehension to workaround upper & lower cases (else we could use just .index())
+    ingredient_col_start = [item.lower() for item in products_df.columns].index("Comments".lower())
+    #And assume there is one for each target / query ingredient:
+    ingredient_col_end = ingredient_col_start + len(query_ingredients_list)-1
+    #Use a list comprehension to build the list of tags and join the list using commas to form a string:
+    tags_string = ','.join([".col{}.data".format(x)  for x in range(ingredient_col_start,ingredient_col_end+1)])
+    temp_css_string = temp_css_string.replace('EXTRA_COLS', tags_string)
+    print ("tags are: '{}'".format(tags_string))
+    #Second 'replace' </style> in the rendered table string  with the above added on the front of itblock into the
+
+    html_table = html_table.replace("</style>", temp_css_string + "</style>\n")
 
     #Print a subsection of the table if you are having difficultly:
     #print("HTML Table is: \n'{}'...etc...\n'{}'".format(html_table[:500], html_table[-2000:-1]))
@@ -192,15 +233,6 @@ def markup_ingredient_text(text, start=0, end=1, css_class="ingtxt"):
                            text[end:])
     #print ("MIT: returning: '{}'".format(marked_up_text))
     return marked_up_text
-
-def example_product_list():
-    """
-    Really simple helper function to fix/fake the search terms:
-    :return:
-    """
-    #return ["Salt"]
-    #return ["milk", "whey", "Lactose","Salt"]
-    return ["milk","Salt"]
 
 
 if __name__ == '__main__':
