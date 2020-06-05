@@ -5,10 +5,11 @@ Ingredients module: useful, common routines for general use including:
 
 """
 import re
-
 def get_CSS_table_styles_dictionary():
     styles = [
-        dict(selector="table", props =[("border-spacing", "0"),
+        dict(selector="table", props =[("table-layout","fixed"),
+                                       ("width","100%"),
+                                       ("border-spacing", "0"),
                                        ("padding","0"),
                                        ("border-collapse","collapse")]),
         dict(selector="td", props =[("text-align", "center"),
@@ -24,13 +25,13 @@ def get_CSS_table_styles_dictionary():
                                      ("font-size", "120%"),
                                      ("padding-left", "2px"),
                                      ("text-align", "left"),
+                                     ("width","6em"),
                                      ("font-family", "\"Times New Roman\", Times, serif")]),
-        dict(selector=".col1,.col2,.col3", props = [("text-align","center")]),
         dict(selector="tr:nth-child(even)",props = [("background-color","#f2f2f2")]),
         dict(selector=".row_heading", props =[("border-right", "2px solid #000"),
                                               ("font - size", "110 %"),
                                               ("text-align","left"),
-                                              ("width", "5em"),
+                                              ("width", "10em"),
                                               ("background-color","DarkOrange"),
                                               ("color","White")]),
         dict(selector="caption", props=[("caption-side", "bottom"),
@@ -41,35 +42,94 @@ def get_CSS_table_styles_dictionary():
                                              ("color", "White"),
                                              ("border-right", "2px solid #000"),
                                              ("border-bottom","2px solid #000"),
-                                             ("width", "8em"),
-                                             ("text-align", "center"),
-                                             ("foo", "bar")])
+                                             ("text-align", "center")]),
+        #Product ID we have done above and is very special being the row header, but set the columns widths
+        dict(selector=".col1", props=[("width", "20em")]), #Product Name
+        dict(selector=".col2", props=[("width", "3em")]), #URL
+        dict(selector=".col3", props=[("width", "10em")]), #Allergens
+        dict(selector=".col4", props=[("width", "4em")]),  # Weight
+        dict(selector=".col5 .col6", props=[("width", "10em")]), # Source
+        dict(selector=".col5.data .col6.data", props=[("font-size", "75%")]),
+        # col 7 and higher are ingredient matches:...so we create this tag to let the Python code to fill them in:
+        dict(selector=".COL_REPLACE_TAG.data", props=[("background-color", "oldlace")])  # Weight
+        # dict(selector=".col3.data", props=[("font-size", "50%"),
     ]
     return styles
 
-def render_df_to_html(df_passed, caption=None):
+
+def get_CSS_table_styles_dictionary():
+    styles = [
+        dict(selector="table", props =[("table-layout","fixed"),
+                                       ("width","100%"),
+                                       ("border-spacing", "0"),
+                                       ("padding","0"),
+                                       ("border-collapse","collapse")]),
+        dict(selector="td", props =[("text-align", "center"),
+                                    ("padding","0px"),
+                                    ("font-family", "\"Lucida Console\", Courier, monospace"),
+                                    ("border-right","2px solid #000")]),
+        dict(selector="span.ingtxt", props=[("background-color", "Yellow"),
+                                      ("color", "Blck"),
+                                      ("font-weight","bold"),
+                                      ("font-family", "\"Lucida Console\", Courier, monospace")]),
+        dict(selector=".col0",props=[("background-color", "DarkOrange"),
+                                     ("color", "White"),
+                                     ("font-size", "120%"),
+                                     ("padding-left", "2px"),
+                                     ("text-align", "left"),
+                                     ("width","6em"),
+                                     ("font-family", "\"Times New Roman\", Times, serif")]),
+        dict(selector="tr:nth-child(even)",props = [("background-color","#f2f2f2")]),
+        dict(selector=".row_heading", props =[("border-right", "2px solid #000"),
+                                              ("font - size", "110 %"),
+                                              ("text-align","left"),
+                                              ("width", "10em"),
+                                              ("background-color","DarkOrange"),
+                                              ("color","White")]),
+        dict(selector="caption", props=[("caption-side", "bottom"),
+                                        ("color", "#bbb")]),
+        dict(selector=".col_heading", props=[("font-size", "110%"),
+                                             ("text-align", "center"),
+                                             ("background-color", "DarkOrange"),
+                                             ("color", "White"),
+                                             ("border-right", "2px solid #000"),
+                                             ("border-bottom","2px solid #000"),
+                                             ("text-align", "center")]),
+        #Product ID we have done above and is very special being the row header, but set the columns widths
+        dict(selector=".col1", props=[("width", "20em")]), #Product Name
+        dict(selector=".col2", props=[("width", "3em")]), #URL
+        dict(selector=".col3", props=[("width", "10em")]), #Allergens
+        dict(selector=".col4", props=[("width", "4em")]),  # Weight
+        dict(selector=".col5 .col6", props=[("width", "10em")]), # Source
+        dict(selector=".col5.data .col6.data", props=[("font-size", "75%")]),
+        # col 7 and higher are ingredient matches:...so we create this tag to let the Python code to fill them in:
+        dict(selector=".COL_REPLACE_TAG.data", props=[("background-color", "oldlace")])  # Weight
+        # dict(selector=".col3.data", props=[("font-size", "50%"),
+    ]
+    return styles
+
+def render_df_to_html(df_passed, caption=None, extra_css=None):
     """
     Just render the Data frame passed to HTML and return it (hacking it so the styles work properly):
 
     :param df_passed: The Pandas dataframe to be rendered
-    :param caption: Optional caprion for the table
+    :param caption: Optional caption for the table
+    :extra_css: Optional extra CSS style to replace the COL_REPLACE_TAG with
     :return: a text string of HTML or None:
     """
     #Take a copy to work on (deep ensures it is a 'copy by value' so we can't hurt the original)
     internal_df = df_passed.copy(deep=True)
-
-    #Clean up the NaN or - more likely - nan:
-    internal_df.fillna("", inplace=True)
-    internal_df.replace()
-    print ("Columns: '{}'".format(internal_df.columns))
+    #Remove the index column:
     #internal_df.reset_index(drop=True, inplace=True)
     internal_df.drop(columns="index",inplace=True)
-    print("Columns: '{}'".format(internal_df.columns))
+
+    #As we use this a lot:
     internal_styler = internal_df.style
-    #get_CSS_table_styles_dictionary()
+    #Set the table styles to the default
     internal_styler.set_table_styles(get_CSS_table_styles_dictionary())
-    #Truncate the weight column values to 0 d.p. for output
-    internal_styler.format({'Weight':'{:g}'})
+
+    #Truncate the weight column values to 0 d.p. for output and ommit nan completely.
+    internal_styler.format({'Weight':'{:g}'},na_rep='')
 
     internal_styler.hide_index()
     if caption != None:

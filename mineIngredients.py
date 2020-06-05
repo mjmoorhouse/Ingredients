@@ -56,35 +56,6 @@ def main():
     #Get a product list locally for now from a function (ultimately likely a tab delimited or JSON file):
     query_ingredients_list = example_product_list()
 
-    #Create a list to store the matching product IDs as appending to Dataframes is slow:
-    matching_products_list = list()
-    #
-    # for c_ingredient in query_ingredients_list:
-    #
-    #     #Create a 'match mask' using a simple search for now:
-    #     product_mask = products_df['Ingredients'].str.contains(c_ingredient, case=False)
-    #
-    #     #Convert the NaN (from missing ingredients) to False:
-    #     #There must be a list comprehension version of this (lamabda function? Map?)
-    #     for x in range (0, len(product_mask)):
-    #         #print ("x {} = {}".format(x, product_mask[x]))
-    #         if math.isnan(product_mask[x]):
-    #             product_mask[x] = False
-    #
-    #     #Note all the matching IDs as 'True' into a simple list (easier to extend+filter this than a Data Frame:
-    #     matching_products_list.extend(products_df[product_mask]['Product ID'])
-    #
-    # #Remember this section is per target ingredients:
-    # before_uniquing_ids = len(matching_products_list)
-    # matching_products_list = list(set(matching_products_list))
-    # after_uniquing_ids = len(matching_products_list)
-    # print ("Before and after uniquing IDs in list: {} & {} length of list".format(before_uniquing_ids, after_uniquing_ids))
-    #
-    # #Subset the matching products into a new dataframe (as we will adapt / markup) - Remember to RE-INDEX it...
-    # #....otherwise iterrows will get confused and iterate row-items that aren't there:
-    # matching_products_df = products_df[products_df['Product ID'].isin(matching_products_list)]
-    # matching_products_df.reset_index(inplace=True)
-
     print ("There are '{}' rows and columns in the 'matching_products' Data Frame".format(products_df.shape))
     #sys.exit(0)
     #Add the new columns to store the ingredients match (we don't need this?)
@@ -92,13 +63,11 @@ def main():
     colindex = dict()
     #Create the new columns for each ingredient we are searching for:
     for c_ingredient in query_ingredients_list:
-        products_df.insert(3,c_ingredient.title(), "")
+        products_df.insert(products_df.shape[1],c_ingredient.title(), "")
         #Store where we added each in a dictionary:
         colindex[c_ingredient] = colindex_counter
         colindex_counter = colindex_counter +1
 
-    # sys.exit(0)
-    #print (products_df.iloc[56:59])
     #Basically everything that doesn't match:
     product_ids_to_remove = list()
     #Store the 'problematic ingredients' that can't be split on commas
@@ -108,19 +77,6 @@ def main():
     for c_index, c_row in products_df.iterrows():
         this_product_id= c_row['Product ID']
         raw_ingredients = c_row['Ingredients']
-        #Keep this section for now...ICE
-        # try:
-        #     #raw_ingredients = matching_products_df.iloc[c_index]['Ingredients']
-        # except Exception as e:
-        #
-        #     print("\n\n\This combination is erroring: '{}' index, row '\n{}'".format(c_index, c_row))#
-        #     print("Erroring ingredients: ".format(matching_products_df.iloc[12]['Ingredients']))
-        #     print("Raw Ingredients: '{}'".format(raw_ingredients))
-        #     #print("split: '{}'".format(split_ingredients))
-        #     print ("Error was: '{}'".format(str(e)))
-        #     print ("Count is: '{}'".format(count))
-        #     print ("We will iterate through this number of rows: '{}'".format(len(list(matching_products_df.iterrows()))))
-        #     sys.exit(0)
         # Split list on commas for indvidual ingredients:
         try:
             split_ingredients = raw_ingredients.split(",")
@@ -138,7 +94,7 @@ def main():
 
         #Test - properly this time - the ingredients we are searching for against the ingredients list:
         for c_target_ingredient in query_ingredients_list:
-            print ("Testing '{}' Target ingredient".format(c_target_ingredient))
+            #print ("Testing '{}' Target ingredient".format(c_target_ingredient))
             #Compile a Regex to exclude "(Milk)" but include "Milk", "Milk Protein", "milk powder"
             this_re = re.compile('(?<![(])'+c_target_ingredient+'(?![)])',re.I)
             for c_ingredient in split_ingredients:
@@ -153,7 +109,7 @@ def main():
                     start, end = result.span()
                     #Ask for the text marking up and store the result in the dataframe:
                     html_markup = markup_ingredient_text(c_ingredient, start, end)
-                    print  ("HTML markup:'{}'".format(html_markup))
+                    #print  ("HTML markup:'{}'".format(html_markup))
                     products_df.at[c_index, c_target_ingredient.title()] = html_markup
         #So if we really don't find a match then add this product to the removal (kill) list:
         if no_match_marker == True:
@@ -179,7 +135,7 @@ def main():
 
     #A little pre-rendering manipulation as this easier here (weights round to ints, supress NaN to empty (&nbsp?)
     #than back-hacking the HTML afterwards with Regexs.
-    products_df.astype({'Weight':'Int64'}, copy=False)
+    #products_df.astype({'Weight':'Int64'}, copy=Fal*se)
     products_df['Comments'].fillna("",inplace=True)
 
     # Send off the data for rendering to HTML in the 'House Style'
@@ -195,16 +151,16 @@ def main():
     # class="data row29 col3" ><A href="https://www.tesco.com/groceries/en-GB/products/305781649></a>
     # https://www.tesco.com/groceries/en-GB/products/305781649</td>
     #For this we have to find the column:
-    URL_colindex_groups = re.match(r"<th.*?(?:col)(\d)\">URL", html_table)
-    print ("Match result = '{}'".format(URL_colindex_groups))
-    URL_colindex = 4
-    #URL_colindex = URL_colindex_groups.group(1)
-    print ("The URL column is {}".format(URL_colindex))
+    URL_colindex_groups = re.search(r'col(\d)" *>URL</th>', html_table)
+    URL_colindex = URL_colindex_groups.group(1)
+    print ("The URL column determined as '{}'".format(URL_colindex))
     html_table = re.sub(r"(?:col"+str(URL_colindex)+"\" \>)(.*?)(?: *\<\/td>)",
-                        r'col3" >\n<a href="\1">\1</a></td>',html_table)
+                        r'col3" >\n<a href="\1">link</a></td>',html_table)
 
     #Print a subsection of the table if you are having difficultly:
     #print("HTML Table is: \n'{}'...etc...\n'{}'".format(html_table[:500], html_table[-2000:-1]))
+
+    #Request a write out using the module file handling routine(s):
     if ind.write_item_to_file(html_table, "example_match_table.html"):
         print ("Could not write out HTML table")
         sys.exit(1)
