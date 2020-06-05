@@ -40,6 +40,7 @@ extra_css = """
     #TABLE_ID EXTRA_COLS {
     word-break: break-all;
     border-bottom: 1px solid #AAA;
+    border-left: 2px solid #AAA;
       width: 15em;
 }
 """
@@ -161,10 +162,9 @@ def main():
                     "Results of {} products search of '{}'".
                     format(str(n_matching_products), str(query_ingredients_list)))
     #Add in the extra CSS for this particular table:
-    #First - before we manipulate anything too much get the table ID:
+
+    #First - before we manipulate anything too much get the table ID (less likely to break here!):
     table_id = ind.get_table_id(html_table)
-    print ("Table ID: '{}'".format(table_id))
-    #This allows us to add back in the extra CSS needed for this table:
 
     #Clean up the worst of the silliness in the HTML such as:
 
@@ -192,10 +192,11 @@ def main():
     ingredient_col_end = ingredient_col_start + len(query_ingredients_list)-1
     #Use a list comprehension to build the list of tags and join the list using commas to form a string:
     tags_string = ','.join([".col{}.data".format(x)  for x in range(ingredient_col_start,ingredient_col_end+1)])
+    #Replace the Hook in the CSS template with the column ids:
     temp_css_string = temp_css_string.replace('EXTRA_COLS', tags_string)
-    print ("tags are: '{}'".format(tags_string))
-    #Second 'replace' </style> in the rendered table string  with the above added on the front of itblock into the
 
+    #Merge in the bespoke CSS just before the </style> tag in the rendered table string with the above
+    # added on the front of it:
     html_table = html_table.replace("</style>", temp_css_string + "</style>\n")
 
     #Print a subsection of the table if you are having difficultly:
@@ -207,8 +208,6 @@ def main():
         sys.exit(1)
     print("All Done, Bye Bye")
     sys.exit(0)
-
-#This construct to allow functions in any order:
 
 def markup_ingredient_text(text, start=0, end=1, css_class="ingtxt"):
     """
