@@ -138,13 +138,14 @@ def main():
 
         #Test - properly this time - the ingredients we are searching for against the ingredients list:
         for c_target_ingredient in query_ingredients_list:
-            #print ("Testing '{}' Target ingredient".format(c_target_ingredient))
-            this_re = re.compile("[^(]"+c_target_ingredient+"[^)]",re.IGNORECASE)
+            print ("Testing '{}' Target ingredient".format(c_target_ingredient))
+            #Compile a Regex to exclude "(Milk)" but include "Milk", "Milk Protein", "milk powder"
+            this_re = re.compile('(?<![(])'+c_target_ingredient+'(?![)])',re.I)
             for c_ingredient in split_ingredients:
                 #Do the search (ignoring the upper/lower casee)
                 result = this_re.search(c_ingredient)
-                #result = this_re.search(c_ingredient, re.IGNORECASE)
-                #Result of a match is not None, so do something with it:
+
+                #Result of a match is not 'None', do something with the match:
                 if result:
                     #First a match reqiires we to keep this product in the table:
                     no_match_marker = False
@@ -227,14 +228,23 @@ def markup_ingredient_text(text, start=0, end=1, css_class="ingtxt"):
     mimicing this:
     marked_up = c_ingredient[0:start+1]+"|"+c_target_ingredient+"|"+c_ingredient[end-1:]
     """
-    #print ("MIT: {},{},{},{}".format(text,start,end,css_class))
+    print ("MIT: {},{},{},{}".format(text,start,end,css_class))
     marked_up_text =  '{}<span class="{}">{}</span>{}'.\
-                    format(text[0:start + 1],
+                    format(text[0:start],
                            css_class,
-                           text[start+1:end-1],
-                           text[end-1:])
+                           text[start:end],
+                           text[end:])
     #print ("MIT: returning: '{}'".format(marked_up_text))
     return marked_up_text
+
+def example_product_list():
+    """
+    Really simple helper function to fix/fake the search terms:
+    :return:
+    """
+    #return ["Salt"]
+    #return ["milk", "whey", "Lactose","Salt"]
+    return ["milk","Salt"]
 
 
 if __name__ == '__main__':
