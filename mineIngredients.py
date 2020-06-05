@@ -228,7 +228,7 @@ def markup_ingredient_text(text, start=0, end=1, css_class="ingtxt"):
     mimicing this:
     marked_up = c_ingredient[0:start+1]+"|"+c_target_ingredient+"|"+c_ingredient[end-1:]
     """
-    print ("MIT: {},{},{},{}".format(text,start,end,css_class))
+    #print ("MIT: {},{},{},{}".format(text,start,end,css_class))
     marked_up_text =  '{}<span class="{}">{}</span>{}'.\
                     format(text[0:start],
                            css_class,

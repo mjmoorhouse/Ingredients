@@ -55,10 +55,18 @@ def render_df_to_html(df_passed, caption=None):
     :param caption: Optional caprion for the table
     :return: a text string of HTML or None:
     """
+    #Take a copy to work on (deep ensures it is a 'copy by value' so we can't hurt the original)
     internal_df = df_passed.copy(deep=True)
-    internal_df.fillna("")
+
+    #Clean up the NaN or - more likely - nan:
+    internal_df.fillna("", inplace=True)
+    internal_df.replace()
+    print ("Columns: '{}'".format(internal_df.columns))
+    #internal_df.reset_index(drop=True, inplace=True)
+    internal_df.drop(columns="index",inplace=True)
+    print("Columns: '{}'".format(internal_df.columns))
     internal_styler = internal_df.style
-    get_CSS_table_styles_dictionary()
+    #get_CSS_table_styles_dictionary()
     internal_styler.set_table_styles(get_CSS_table_styles_dictionary())
     #Truncate the weight column values to 0 d.p. for output
     internal_styler.format({'Weight':'{:g}'})
