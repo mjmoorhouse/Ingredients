@@ -14,6 +14,7 @@ import pandas as pd
 import sys
 import re
 import ingredients as ind
+from collections import defaultdict
 print ("]....Done")
 #User servicable parts:
 combined_matrix_fname = "all_products.txt"
@@ -96,6 +97,9 @@ def main():
     #  - likely this is because they are missing and "NaN"
     problematic_ingredients = list()
 
+    #This stores a count of the ingredients matched:
+    ingredient_hits = defaultdict(lambda: defaultdict(dict))
+
     #Iterate through the matching rows:
     for c_index, c_row in products_df.iterrows():
         this_product_id= c_row['Product ID']
@@ -129,6 +133,11 @@ def main():
                     html_markup = markup_ingredient_text(c_ingredient, start, end)
                     #print  ("HTML markup:'{}'".format(html_markup))
                     products_df.at[c_index, c_target_ingredient.title()] = html_markup
+
+                    #Also note it in the ingredients hit count:
+                    #increment_dict(tally_dict, level_1_key, level_2_key)
+                    increment_dict (ingredient_hits, c_target_ingredient, c_ingredient.title())
+
         #So if we really don't find a match then add this product to the removal (kill) list:
         if no_match_marker == True:
             product_ids_to_remove.append(c_index)
@@ -142,6 +151,17 @@ def main():
     #print(problematic_ingredients)
     n_matching_products = len(products_df.index)
     print ("Hence this many products matches and will be outputted: {}".format(n_matching_products))
+
+    #A _really_ crude dump of the ingredient hits....
+    #print ("Breakdown of the ingredients found:\n'{}'".format(ingredient_hits))
+    #Insist
+    ingredient_hits_df = pd.DataFrame.from_dict(ingredient_hits,dtype='int64')
+
+    #print ("Columns are: '{}'".format(list(ingredient_hits_df.columns)[::-1]))
+    #sys.exit(1)
+
+    ingredient_hits_df.sort_values(inplace=True, by=list(ingredient_hits_df.columns)[::-1], ascending=False)
+    print ("Dataframe version is:\n'{}'".format(ingredient_hits_df))
 
     #Just remove this column for printout purposes temporarally:
     #(We might want to add this back in at some point to give context; not now)
@@ -208,6 +228,29 @@ def main():
         sys.exit(1)
     print("All Done, Bye Bye")
     sys.exit(0)
+
+def increment_dict(tally_dict, level_1_key, level_2_key):
+    """
+    Because in Python we have dictionaries that don't auto-vivify their sub level keys
+    (Perl has to be better at something)
+    :param tally_dict: the dictionary to increment
+    :param level_1_key: dict[THIS ONE][]
+    :param level_2_key: dict[][THIS ONE]
+    :return:
+    """
+    #Initialise the base (1st level key) if it doesn't exist:
+    if tally_dict.get(level_1_key) == None:
+        print ("Base key doesn't exist; so adding...")
+        tally_dict[level_1_key] = dict()
+
+    #Initilise the second level key now?
+    if tally_dict.get(level_1_key).get(level_2_key) == None:
+        tally_dict[level_1_key][level_2_key] = 0
+        #print ("Key init: {}".format(tally_dict[level_1_key][level_2_key]))
+
+    #Increment the tally now both keys levels exist:
+    tally_dict[level_1_key][level_2_key] = tally_dict[level_1_key][level_2_key] + 1
+    return 0
 
 def markup_ingredient_text(text, start=0, end=1, css_class="ingtxt"):
     """
