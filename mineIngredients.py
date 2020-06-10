@@ -15,11 +15,20 @@ import sys
 import re
 import ingredients as ind
 from collections import defaultdict
+import datetime
 print ("]....Done")
-#User servicable parts:
+#User servicable parts (put these into a config file....soon.
 combined_matrix_fname = "all_products.txt"
-#This is the extra CSS used for rendering the table:
-extra_css = """
+#The two suffixes of the html tables we will generate: e.g. "2020-06-10_milwheLacSal_matches.html"
+product_match_table_base_fname = "matches.html"
+ingredient_counts_base_fname = "counts.html"
+
+#Filter the ingredient count table (if necessary):
+report_threhold = 3
+
+
+#This is the extra CSS used for rendering the match table:
+mtable_extra_css = """
     #TABLE_ID .col1 {
       width: 15em;
 }    
@@ -28,7 +37,6 @@ extra_css = """
 }    
     #TABLE_ID .col3 {
       width: 10em;
-      font-size:  75%;
 }    
     #TABLE_ID .col4 {
       width: 4em;
@@ -83,8 +91,16 @@ def main():
     #Get a product list locally for now from a function (ultimately likely a tab delimited or JSON file):
     query_ingredients_list = example_product_list()
 
-    print ("There are '{}' rows and columns in the 'matching_products' Data Frame".format(products_df.shape))
+    #print ("There are '{}' rows and columns in the 'matching_products' Data Frame".format(products_df.shape))
     #sys.exit(0)
+    #Build the output filnames from the list of ingredients we are searching for:
+    search_tag = "".join([x[0:3] for x in query_ingredients_list])
+    print ("Filenames will be tagged with: '{}' (and today's date)".format(search_tag))
+    this_day = str(datetime.date.today())
+    match_res_fname = "_".join([this_day,search_tag,product_match_table_base_fname])
+    counts_res_fname = "_".join([this_day, search_tag, ingredient_counts_base_fname])
+    # counts_res_fname = "{}-{}-{}".format(this_day,search_tag,ingredient_counts_base_fname)
+    print ("Output html files are: {} and {}".format(match_res_fname,counts_res_fname))
 
     #Create the new columns for each ingredient we are searching for:
     for c_ingredient in query_ingredients_list:
@@ -98,8 +114,8 @@ def main():
     problematic_ingredients = list()
 
     #This stores a count of the ingredients matched:
-    ingredient_hits = defaultdict(lambda: defaultdict(dict))
-
+    #ingredient_hits = defaultdict(lambda: defaultdict(dict))
+    ingredient_hits = dict ()
     #Iterate through the matching rows:
     for c_index, c_row in products_df.iterrows():
         this_product_id= c_row['Product ID']
@@ -152,7 +168,10 @@ def main():
     n_matching_products = len(products_df.index)
     print ("Hence this many products matches and will be outputted: {}".format(n_matching_products))
 
-    #A _really_ crude dump of the ingredient hits....
+    """
+    Create a table of the ingredient hits - reported exceeding the threshold of 'report_threhold'
+    
+    """
     #print ("Breakdown of the ingredients found:\n'{}'".format(ingredient_hits))
     #Insist
     ingredient_hits_df = pd.DataFrame.from_dict(ingredient_hits,dtype='int64')
@@ -168,8 +187,21 @@ def main():
     products_df.drop(columns='Ingredients',inplace=True)
     #print (products_df.head())
 
+    #Create a mask for filtering the rows with not much in them:
+    #(Ask for a sum across all rows {list} then test using a comprehension for Boolean array:
+    exceeds_report_count_df = [True if x>report_threhold else False for x in ingredient_hits_df.sum(axis=1)]
+
+    #print (exceeds_report_count_df)
+    n_below_below_reporting_threshold = len(exceeds_report_count_df) - sum(exceeds_report_count_df)
+    print ("Will exclude '{}' (of {}) ingredients as below threshold of {}".
+           format(n_below_below_reporting_threshold,len(ingredient_hits_df),report_threhold))
+    short_ingredient_hits_df = ingredient_hits_df[exceeds_report_count_df]
+    short_ingredient_hits_df = short_ingredient_hits_df.applymap(str)
+    short_ingredient_hits_df.replace("nan", "", inplace=True)
+    print(short_ingredient_hits_df)
     """
     HTML Table rendering:
+    1) The product matches
     """
 
     #A little pre-rendering manipulation as this easier here (weights round to ints, supress NaN to empty (&nbsp?)
@@ -203,7 +235,7 @@ def main():
     #Add in the specific CSS formatting for this table over the default just before the "</style>" tag:
     #See Start of program for the actual text:
     #First add in the table IDs:
-    temp_css_string = extra_css.replace("TABLE_ID",table_id)
+    temp_css_string = mtable_extra_css.replace("TABLE_ID", table_id)
 
     #Next build and format the extra 'Ingredient' columns:
     #Use a list comprehension to workaround upper & lower cases (else we could use just .index())
@@ -223,7 +255,7 @@ def main():
     #print("HTML Table is: \n'{}'...etc...\n'{}'".format(html_table[:500], html_table[-2000:-1]))
 
     #Request a write out using the module file handling routine(s):
-    if ind.write_item_to_file(html_table, "example_match_table.html"):
+    if ind.write_item_to_file(html_table, match_res_fname):
         print ("Could not write out HTML table")
         sys.exit(1)
     print("All Done, Bye Bye")
