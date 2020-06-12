@@ -63,7 +63,7 @@ def example_product_list():
     :return:
     """
     #return ["Salt"]
-    return ["milk", "whey", "Lactose","Salt"]
+    return ["milk", "whey", "Lactose","Salt","'Salt'"]
     #return ["milk","Salt"]
 
 def main():
@@ -132,12 +132,23 @@ def main():
 
         #Test - properly this time - the ingredients we are searching for against the ingredients list:
         for c_target_ingredient in query_ingredients_list:
+            search_re = None
+            #Should we use exact matching or partial matching:
+            if re.match(r"^'.*?'$", c_target_ingredient):
+                #print("Exact match request detected: '{}'".format(c_target_ingredient))
+                #print ('^'+c_target_ingredient[1:-1]+'$')
+                search_re = re.compile(str('^'+c_target_ingredient[1:-1]+'$'),re.IGNORECASE)
+
+            else:
+                # Compile a Regex to exclude "(Milk)" but include "Milk", "Milk Protein", "milk powder"
+                #print ("Normal (partial match) allowed")
+                search_re = re.compile('(?<![(])'+c_target_ingredient+'(?![)])',re.IGNORECASE)
             #print ("Testing '{}' Target ingredient".format(c_target_ingredient))
-            #Compile a Regex to exclude "(Milk)" but include "Milk", "Milk Protein", "milk powder"
-            this_re = re.compile('(?<![(])'+c_target_ingredient+'(?![)])',re.I)
+
+            #this_re = re.compile('(?<![(])'+c_target_ingredient+'(?![)])',re.IGNORECASE)
             for c_ingredient in split_ingredients:
                 #Do the search (ignoring the upper/lower case)
-                result = this_re.search(c_ingredient)
+                result = search_re.search(c_ingredient)
 
                 #Result of a match is not 'None', do something with the match:
                 if result:
