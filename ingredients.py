@@ -133,7 +133,7 @@ def render_df_to_html(df_passed, caption=None):
     internal_styler.set_table_styles(get_CSS_table_styles_dictionary())
 
     #Truncate the weight column values to 0 d.p. for output and ommit nan completely.
-    internal_styler.format({'Weight':'{:g}'},na_rep='')
+    internal_styler.format({'Weight (g)':'{:g}'},na_rep='')
 
     internal_styler.hide_index()
     if caption != None:

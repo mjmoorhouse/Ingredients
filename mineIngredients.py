@@ -136,7 +136,7 @@ def main():
             #Compile a Regex to exclude "(Milk)" but include "Milk", "Milk Protein", "milk powder"
             this_re = re.compile('(?<![(])'+c_target_ingredient+'(?![)])',re.I)
             for c_ingredient in split_ingredients:
-                #Do the search (ignoring the upper/lower casee)
+                #Do the search (ignoring the upper/lower case)
                 result = this_re.search(c_ingredient)
 
                 #Result of a match is not 'None', do something with the match:
@@ -206,8 +206,12 @@ def main():
 
     #A little pre-rendering manipulation as this easier here (weights round to ints, supress NaN to empty (&nbsp?)
     #than back-hacking the HTML afterwards with Regexs.
-    #products_df.astype({'Weight':'Int64'}, copy=Fal*se)
+
     products_df['Comments'].fillna("",inplace=True)
+    if 'Weight' in products_df.columns:
+        print ("Setting (g) weight units")
+        products_df.rename(columns={"Weight":"Weight (g)"}, inplace=True)
+    #Add the (g) unit to the "Weight" column:
 
     # Send off the data for rendering to HTML in the 'House Style'
     html_table = ind.render_df_to_html(products_df,
