@@ -132,25 +132,22 @@ def main():
 
         #Test - properly this time - the ingredients we are searching for against the ingredients list:
         for c_target_ingredient in query_ingredients_list:
-            search_re = None
-            #Should we use exact matching or partial matching:
+            #The regex used to match needs to be scoped outside the conditional statement block:
+            search_re
+            #Should we use exact matching or partial matching: (Yes: if the the target in enclosed in ' ie. 'Salt')
             if re.match(r"^'.*?'$", c_target_ingredient):
-                #print("Exact match request detected: '{}'".format(c_target_ingredient))
-                #print ('^'+c_target_ingredient[1:-1]+'$')
+                #i.e. exact match:
                 search_re = re.compile(str('^'+c_target_ingredient[1:-1]+'$'),re.IGNORECASE)
-
             else:
-                # Compile a Regex to exclude "(Milk)" but include "Milk", "Milk Protein", "milk powder"
-                #print ("Normal (partial match) allowed")
+                #Allow partial, fancy matches:
                 search_re = re.compile('(?<![(])'+c_target_ingredient+'(?![)])',re.IGNORECASE)
-            #print ("Testing '{}' Target ingredient".format(c_target_ingredient))
 
-            #this_re = re.compile('(?<![(])'+c_target_ingredient+'(?![)])',re.IGNORECASE)
+            #Try to match all the ingredients in all the products:
             for c_ingredient in split_ingredients:
                 #Do the search (ignoring the upper/lower case)
                 result = search_re.search(c_ingredient)
+                #Result of a actually match is not 'None', - so there is data to extract:
 
-                #Result of a match is not 'None', do something with the match:
                 if result:
                     #First a match reqiires we to keep this product in the table:
                     no_match_marker = False
