@@ -53,6 +53,18 @@ mtable_extra_css = """
       width: 15em;
 }
 """
+ctable_extra_css = """
+    #TABLE_ID .col0 {
+      width: 15em;
+}
+    
+    #TABLE_ID EXTRA_COLS {
+    word-break: break-all;
+    border-bottom: 1px solid #AAA;
+    border-left: 2px solid #AAA;
+      width: 15em;
+}
+"""
 
 #Might be useful if printing dataframes to terminal, otherwise causes no harm:
 pd.set_option('display.max_rows', None)
@@ -98,7 +110,11 @@ def main():
     print ("Filenames will be tagged with: '{}' (and today's date)".format(search_tag))
     this_day = str(datetime.date.today())
     match_res_fname = "_".join([this_day,search_tag,product_match_table_base_fname])
-    counts_res_fname = "_".join([this_day, search_tag, ingredient_counts_base_fname])
+    counts_res_fname = "_".join([this_day, search_tag,ingredient_counts_base_fname])
+
+    #Replace any quotation marks that might confuse the shell / OS:
+    match_res_fname = match_res_fname.replace("'","^")
+    counts_res_fname = counts_res_fname.replace("'", "^")
     # counts_res_fname = "{}-{}-{}".format(this_day,search_tag,ingredient_counts_base_fname)
     print ("Output html files are: {} and {}".format(match_res_fname,counts_res_fname))
 
@@ -133,7 +149,7 @@ def main():
         #Test - properly this time - the ingredients we are searching for against the ingredients list:
         for c_target_ingredient in query_ingredients_list:
             #The regex used to match needs to be scoped outside the conditional statement block:
-            search_re
+            search_re = None
             #Should we use exact matching or partial matching: (Yes: if the the target in enclosed in ' ie. 'Salt')
             if re.match(r"^'.*?'$", c_target_ingredient):
                 #i.e. exact match:
@@ -183,14 +199,16 @@ def main():
     #print ("Breakdown of the ingredients found:\n'{}'".format(ingredient_hits))
     #Insist
     ingredient_hits_df = pd.DataFrame.from_dict(ingredient_hits,dtype='int64')
+    print (ingredient_hits_df.head())
 
-    #print ("Columns are: '{}'".format(list(ingredient_hits_df.columns)[::-1]))
-    #sys.exit(1)
+    print (len(ingredient_hits_df.columns))
+    print ("Columns are: '{}'".format(list(ingredient_hits_df.columns)[::-1]))
+
 
     ingredient_hits_df.sort_values(inplace=True, by=list(ingredient_hits_df.columns)[::-1], ascending=False)
-    print ("Dataframe version is:\n'{}'".format(ingredient_hits_df))
 
-    #Just remove this column for printout purposes temporarally:
+
+    #Just remove this column for printout purposes temporally:
     #(We might want to add this back in at some point to give context; not now)
     products_df.drop(columns='Ingredients',inplace=True)
     #print (products_df.head())
@@ -201,12 +219,16 @@ def main():
 
     #print (exceeds_report_count_df)
     n_below_below_reporting_threshold = len(exceeds_report_count_df) - sum(exceeds_report_count_df)
-    print ("Will exclude '{}' (of {}) ingredients as below threshold of {}".
+    print ("Will exclude '{}' (of {}) ingredients as below threshold of {} instances required for reporting".
            format(n_below_below_reporting_threshold,len(ingredient_hits_df),report_threhold))
+
     short_ingredient_hits_df = ingredient_hits_df[exceeds_report_count_df]
-    short_ingredient_hits_df = short_ingredient_hits_df.applymap(str)
-    short_ingredient_hits_df.replace("nan", "", inplace=True)
-    print(short_ingredient_hits_df)
+    short_ingredient_hits_df.index.name = 'Ingredient'
+    short_ingredient_hits_df.reset_index(inplace=True)
+
+    #['Ingredient'] = short_ingredient_hits_df.index
+    short_ingredient_hits_df = short_ingredient_hits_df.astype(int, errors='ignore')
+
     """
     HTML Table rendering:
     1) The product matches
@@ -214,21 +236,20 @@ def main():
 
     #A little pre-rendering manipulation as this easier here (weights round to ints, supress NaN to empty (&nbsp?)
     #than back-hacking the HTML afterwards with Regexs.
-
+    #Set nan to empty, truly:
     products_df['Comments'].fillna("",inplace=True)
+    #Relabel the weight:
     if 'Weight' in products_df.columns:
-        print ("Setting (g) weight units")
         products_df.rename(columns={"Weight":"Weight (g)"}, inplace=True)
-    #Add the (g) unit to the "Weight" column:
 
     # Send off the data for rendering to HTML in the 'House Style'
-    html_table = ind.render_df_to_html(products_df,
+    pm_html_table = ind.render_df_to_html(products_df,
                     "Results of {} products search of '{}'".
                     format(str(n_matching_products), str(query_ingredients_list)))
     #Add in the extra CSS for this particular table:
 
     #First - before we manipulate anything too much get the table ID (less likely to break here!):
-    table_id = ind.get_table_id(html_table)
+    mt_table_id = ind.get_table_id(pm_html_table)
 
     #Clean up the worst of the silliness in the HTML such as:
 
@@ -238,16 +259,16 @@ def main():
     # class="data row29 col3" ><A href="https://www.tesco.com/groceries/en-GB/products/305781649></a>
     # https://www.tesco.com/groceries/en-GB/products/305781649</td>
     #For this we have to find the column:
-    URL_colindex_groups = re.search(r'col(\d)" *>URL</th>', html_table)
+    URL_colindex_groups = re.search(r'col(\d)" *>URL</th>', pm_html_table)
     URL_colindex = URL_colindex_groups.group(1)
     print ("The URL column determined as '{}'".format(URL_colindex))
-    html_table = re.sub(r"(?:col"+str(URL_colindex)+"\" \>)(.*?)(?: *\<\/td>)",
-                        r'col3" >\n<a href="\1">link</a></td>',html_table)
+    pm_html_table = re.sub(r"(?:col"+str(URL_colindex)+"\" \>)(.*?)(?: *\<\/td>)",
+                        r'col3" >\n<a href="\1">link</a></td>',pm_html_table)
 
     #Add in the specific CSS formatting for this table over the default just before the "</style>" tag:
     #See Start of program for the actual text:
     #First add in the table IDs:
-    temp_css_string = mtable_extra_css.replace("TABLE_ID", table_id)
+    mt_temp_css_string = mtable_extra_css.replace("TABLE_ID", mt_table_id)
 
     #Next build and format the extra 'Ingredient' columns:
     #Use a list comprehension to workaround upper & lower cases (else we could use just .index())
@@ -257,18 +278,51 @@ def main():
     #Use a list comprehension to build the list of tags and join the list using commas to form a string:
     tags_string = ','.join([".col{}.data".format(x)  for x in range(ingredient_col_start,ingredient_col_end+1)])
     #Replace the Hook in the CSS template with the column ids:
-    temp_css_string = temp_css_string.replace('EXTRA_COLS', tags_string)
+    mt_temp_css_string = mt_temp_css_string.replace('EXTRA_COLS', tags_string)
 
     #Merge in the bespoke CSS just before the </style> tag in the rendered table string with the above
     # added on the front of it:
-    html_table = html_table.replace("</style>", temp_css_string + "</style>\n")
+    pm_html_table = pm_html_table.replace("</style>", mt_temp_css_string + "</style>\n")
 
     #Print a subsection of the table if you are having difficultly:
-    #print("HTML Table is: \n'{}'...etc...\n'{}'".format(html_table[:500], html_table[-2000:-1]))
+    #print("HTML Table is: \n'{}'...etc...\n'{}'".format(pm_html_table[:500], pm_html_table[-2000:-1]))
 
     #Request a write out using the module file handling routine(s):
-    if ind.write_item_to_file(html_table, match_res_fname):
-        print ("Could not write out HTML table")
+    if ind.write_item_to_file(pm_html_table, match_res_fname):
+        print ("Could not write out HTML table {} (matching ingredients)".format(product_match_table_base_fname))
+        sys.exit(1)
+
+    """
+    HTML Table rendering:
+    2) The counts of ingredients observed
+    """
+
+    # #Set all the column data types to integer:
+    print ("Data types: '{}'".format(list(short_ingredient_hits_df.dtypes)))
+    # print (short_ingredient_hits_df.columns)
+    # ct_dtypes = list(short_ingredient_hits_df.dtypes)
+    # for c_col_indx in range (1,len(ct_dtypes)):
+    #     col_name = short_ingredient_hits_df.columns[c_col_indx]
+    #     print ("column name = '{}'".format(col_name))
+    #     short_ingredient_hits_df[col_name] = short_ingredient_hits_df[col_name].astype(int)
+
+
+
+    #Render the dataframe to an HTML table:
+    ct_html_table = ind.render_df_to_html(short_ingredient_hits_df,
+                    "Counts of ingredient occurrences observed more than {} times'".
+                    format(str(report_threhold)))
+    #Get the ID from it:
+    ct_table_id = ind.get_table_id(ct_html_table)
+    print (ct_table_id)
+
+    #
+    #First add in the table IDs:
+    ct_temp_css_string = mtable_extra_css.replace("TABLE_ID", mt_table_id)
+
+    #Write the count table out:
+    if ind.write_item_to_file(ct_html_table, counts_res_fname):
+        print ("Could not write out HTML table {} (ingredient counts)".format(counts_res_fname))
         sys.exit(1)
     print("All Done, Bye Bye")
     sys.exit(0)
@@ -284,7 +338,7 @@ def increment_dict(tally_dict, level_1_key, level_2_key):
     """
     #Initialise the base (1st level key) if it doesn't exist:
     if tally_dict.get(level_1_key) == None:
-        print ("Base key doesn't exist; so adding...")
+        #print ("Base key doesn't exist; so adding...")
         tally_dict[level_1_key] = dict()
 
     #Initilise the second level key now?
