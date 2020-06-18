@@ -125,17 +125,29 @@ def render_df_to_html(df_passed, caption=None):
     internal_df = df_passed.copy(deep=True)
     #Remove the index column:
     #internal_df.reset_index(drop=True, inplace=True)
-    internal_df.drop(columns="index",inplace=True)
+    if "index" in internal_df.columns:
+        internal_df.drop(columns="index",inplace=True)
 
     #As we use this a lot:
     internal_styler = internal_df.style
     #Set the table styles to the default
     internal_styler.set_table_styles(get_CSS_table_styles_dictionary())
 
-    #Truncate the weight column values to 0 d.p. for output and ommit nan completely.
-    internal_styler.format({'Weight (g)':'{:g}'},na_rep='')
+    #Truncate the numeric column values to 0 d.p. for output and ommit nan completely:
+    #Cache the types as a list specifically:
+    column_types = list(internal_df.dtypes)
+    #Iterate through these: - just a little too complicated for a neat list comprehension:
+    for c_col_indx in range(0,len(column_types)):
+        c_col_type = column_types[c_col_indx]
+        if c_col_type == "int64" or c_col_type == "float64":
+            col_name = internal_df.columns[c_col_indx]
+            print ("Column name to change to integer: '{}'".format(col_name))
+            internal_styler.format({col_name: '{:g}'}, na_rep='')
 
+    #Hide the index column:
     internal_styler.hide_index()
+
+    #If there is a coption, set it:
     if caption != None:
         internal_styler.set_caption(caption)
 
