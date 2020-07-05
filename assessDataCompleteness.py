@@ -77,61 +77,49 @@ def main():
               format(complete_ingredients, n_corrected_ingredients, n_ingredients))
         # Note down this information into a list (cf. DataFrame - which we build from the list ultimately for performance)
         group_counts.append({"Product Class": str(c_group),
-                             "Total Products": int(n_ingredients),
-                             "Ingredients": int(complete_ingredients),
-                             "Corr. Ingredients": int(n_corrected_ingredients)})
+                             "Number of Products": int(n_ingredients),
+                             "Ingredients Found Automatically": int(complete_ingredients),
+                             "Ingredients Added Manually": int(n_corrected_ingredients),
+                             "Missing": int(n_ingredients-complete_ingredients)})
 
     # Create the DataFrame for ease of printing and manipulation:
     group_counts_df = pd.DataFrame(group_counts,
-                                   columns=["Product Class", "Total Products", "Ingredients", "Corr. Ingredients"])
+                    columns=["Product Class", "Number of Products", "Ingredients Found Automatically",
+                             "Ingredients Added Manually", "Missing"])
 
-    group_counts_df.columns = ["Product Class", "Number of Products", "Ingredients Present", "Ingredients Added Manually"]
-    # Printout locally prior to pretty graphing:
+    #I.e. the absent products:
+    # group_counts_df["Absent"] = (group_counts_df["Number of Products"] - \
+    #                          group_counts_df["Ingredients Present"])
     print("Ultimately:")
     print(group_counts_df)
 
     """
     Pretty Print 1/3: The HTML formatted table of the data as downloaded and cleaned.
-    These are simple counts.
+    These are simple counts - and the absent products
     """
 
     # Send off the data for rendering to HTML in the 'House Style'
     if ind.write_df_to_pretty_table(group_counts_df, raw_counts_html_fname,
-                                    "Completeness of Data Download of Ingredients"):
+                                    "Completeness of Downloaded Ingredients"):
         print ("ERROR: in HTML table rendering to: '{}'".format(raw_counts_html_fname))
 
     """
-    Pretty Print 3/3: The HTML table of the processed count data and a chart to go with it:
+    Pretty Print 2/3: A stacked graph of the same as the above table:
+    If without the total column as we want the components.
     """
+    #Delete the 'total' count:
+    group_counts_df.drop(columns="Number of Products", inplace=True)
 
-    # Declare the raw, empty table:
-    graph_table = pd.DataFrame(group_counts,
-                               columns=["Product Class", "Parsed Automatically", "Ingredients Added Manually", "Absent"])
+    # Clean up the product labels for plotting:
+    group_counts_df["Product Class"] = group_counts_df["Product Class"].apply(clean_up)
 
-    # Populate the table to graph from:
-    # Ensure the indexes are the same so we can copy columns across:
-    graph_table.index = group_counts_df.index
-
-    graph_table["Product Class"] = group_counts_df["Product Class"]
-    graph_table["Parsed Automatically"] = group_counts_df[
-        "Ingredients Present"]  # - group_counts_df["Ingredients Present"])
-    graph_table["Added Manually"] = group_counts_df["Ingredients Added Manually"]
-    graph_table["Absent"] = (group_counts_df["Number of Products"] - \
-                             group_counts_df["Ingredients Present"] -
-                             group_counts_df["Ingredients Added Manually"])
-    # Clean up the product labels:
-    graph_table["Product Class"] = graph_table["Product Class"].apply(clean_up)
-    #Output 1/2: Write HTML to FS
-    ind.write_df_to_pretty_table(graph_table, top_ingred_counts_fname, "")
-
-    #Output 2/2: Chart output:
-    # Tweak the axises, colors etc. but otherwise render the DF as prepared and completly.
+    #Prep the graph canvas:
     sb.set(style="whitegrid")
     bar_colors = ["#80dd80", "#5555FF", "#888888"]
-    axis_gtp = graph_table.plot.bar(x="Product Class",
-                                    y=["Parsed Automatically", "Added Manually", "Absent"],
+    axis_gtp = group_counts_df.plot.bar(x="Product Class",
+                                    y=["Ingredients Found Automatically", "Ingredients Added Manually", "Missing"],
                                     stacked=True,
-                                    title="Completeness of Ingredient List Datasets",
+                                    title="Completeness of Product Category Datasets Ingredient Lists",
                                     position=0.7,
                                     figsize=(10, 6),
                                     color=bar_colors)
