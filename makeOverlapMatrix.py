@@ -1,5 +1,5 @@
 """
-makeOverlapMatric.py
+makeOverlapMatrix.py
 
 When supplied with a directory containing cleaned files, this loads the first columns - containining product IDs -
 in and produces a distance matrix of them.
