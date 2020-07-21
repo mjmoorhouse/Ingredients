@@ -157,7 +157,7 @@ def main():
         print ("Using internal ingredients list: '{}'".format(example_product_list()))
         query_ingredients_list = example_product_list()
     print ("Using ingredients list and search tag: '{}' & '{}'".format(query_ingredients_list, search_tag))
-    sys.exit(1)
+
     # Read the data in:
     try:
         products_df = pd.read_csv(combined_matrix_fname, sep="\t", na_values="NaN")
