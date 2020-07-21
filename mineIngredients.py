@@ -8,13 +8,35 @@ styling is as per the 'ingredients.py' module.
 
 This S/W is currently in a demonstrator status.
 
+An optional config file can be used to override some program operations - specifically:
+a) The list of ingredients searched for
+b) The output file base used
+
+For example run with:
+./mineIngredients.py --config="config.ini"
+
+Then in config.ini:
+'
+[DEFAULT]
+# Note the "'" in the Ingredients list will be replaced by "-" to stop these confusing the OS / FS:
+Ingredients = Milk,Salt,Whey,'Salt'
+
+# OutputFileTag - the name given to the output files created.
+# (As this is used for multiple files, it is best to not add extensions and keep it short: e.g.
+# OutputFileTag = Milk_and_Cheese
+OutputFileTag = Milk_and_Cheese
+
+[DEFAULT]
+'
+Note that any "'" marks causing exact pattern matches are auto-translated to "-" to be more OS/FS friendly.
+
 """
 print ("Loading modules:...[", end="")
 import pandas as pd
 import sys
 import re
 import ingredients as ind
-from collections import defaultdict
+import argparse as argparser
 import datetime
 print ("]....Done")
 #User servicable parts (put these into a config file....soon.
@@ -91,6 +113,51 @@ def main():
 
     :return:
     """
+    # The ingredients we are going to search for (populate later) Get a product list locally for now from a function (ultimately likely a tab delimited or JSON file):
+    # As all these might be set in the config file, declare them in first in the wider scope:
+    query_ingredients_list = list()
+    config_file = ""
+    search_tag = ""
+    # Do we have command line arguments at all?
+    if len(sys.argv) > 1:
+        # Ok - go get the the config file...
+
+        parser = argparser.ArgumentParser()
+        parser.add_argument('--config', action="store")
+        details = parser.parse_args()
+        config_file = details.config
+        # ....there is an implicit assumption that if the --config switch is being used then it should be expected
+        # that a config file is at the end of it.
+        import configparser
+        print("Using config file ('{}')".format(config_file))
+
+        try:
+            config = configparser.ConfigParser()
+            config.read(config_file)
+            print ("Config file: read successful")
+            # Try to get the items we need - all are optional:
+            #The Ingredients search list:
+            if config['DEFAULT'].get('Ingredients'):
+                query_ingredients_list = config['DEFAULT']['Ingredients'].split(",")
+            #The outputfile tag:
+            if config['DEFAULT'].get('OutputFileTag'):
+                search_tag = config['DEFAULT']['OutputFileTag']
+            else:
+                # ....We weren't given it so ... Build the search tag from the list of ingredients we are searching for:
+                search_tag = "".join([x[0:3] for x in query_ingredients_list])
+                # Change any quotes to a "%" to prevent problems with the OS:
+                search_tag = search_tag.replace("'", "-")
+        except Exception as s:
+            print ("Tried to read config file ('{}') and failed; exiting".format(config_file))
+            print ("(Formally exception error was: '{}'".format(str(s)))
+            sys.exit(1)
+        #
+    else:
+        # Nothing passed - so run with the internal hard coded list:
+        print ("Using internal ingredients list: '{}'".format(example_product_list()))
+        query_ingredients_list = example_product_list()
+    print ("Using ingredients list and search tag: '{}' & '{}'".format(query_ingredients_list, search_tag))
+    sys.exit(1)
     # Read the data in:
     try:
         products_df = pd.read_csv(combined_matrix_fname, sep="\t", na_values="NaN")
@@ -100,13 +167,14 @@ def main():
         sys.exit(1)
     print ("Loaded {} products".format(len(products_df["index"])))
 
-    #Get a product list locally for now from a function (ultimately likely a tab delimited or JSON file):
-    query_ingredients_list = example_product_list()
 
     #print ("There are '{}' rows and columns in the 'matching_products' Data Frame".format(products_df.shape))
     #sys.exit(0)
-    #Build the output filnames from the list of ingredients we are searching for:
+    #Build the output filenames from the list of ingredients we are searching for:
     search_tag = "".join([x[0:3] for x in query_ingredients_list])
+    #Change any quotes to a "%" to prevent problems with the OS:
+    search_tag = search_tag.replace("'","-")
+
     print ("Filenames will be tagged with: '{}' (and today's date)".format(search_tag))
     this_day = str(datetime.date.today())
     match_res_fname = "_".join([this_day,search_tag,product_match_table_base_fname])
