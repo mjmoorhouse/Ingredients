@@ -66,9 +66,9 @@ def main():
         c_file_op_path = re.sub('\.csv$', '.txt', c_file_op_path)
         print("Processing #{0} of {1}\t: '{2}'".format(c_file + 1, n_csv_files, c_file_name))
         # Is the file new? (no if the output version exists already, so we skip it)s
-        if os.path.exists(c_file_op_path):
-            print("Already exists, so skipping")
-            continue
+        # if os.path.exists(c_file_op_path):
+        #     print("Already exists, so skipping")
+        #     continue
         print("Processing into '{}'".format(c_file_op_path))
 
         # Read the data in:
@@ -78,14 +78,14 @@ def main():
         ######
         # 1) Standardise all columns on lower case:
         for c_column in raw_results_df.columns:
-            raw_results_df = raw_results_df.rename(columns={c_column : str(c_column).lower()})
+            raw_results_df = raw_results_df.rename(columns={c_column: str(c_column).lower()})
 
         # 2) Add a "Comments" column if one doesn't exist; otherwise preserve the existing one
         if not 'comments' in raw_results_df.columns:
             raw_results_df['comments'] = ''
 
         # 3) Drop the useless (for now) columns:
-        #Probably this could be done with a list comprehension - but this is an improvements
+        # Probably this could be done with a list comprehension - but this is an improvements
         for c_column in columns_to_drop:
             if c_column in raw_results_df.columns:
                 raw_results_df = raw_results_df.drop(c_column, axis=1)
@@ -113,6 +113,7 @@ def main():
         # 10) Now save the cleaned version of the file:
         raw_results_df.to_csv(c_file_op_path, sep='\t', index=False)
 
+
 def clean_ingredients(ingredients_list):
     """
     Mostly applies regexs to remove the worse of the non-standard markup making keyword searches easier.
@@ -125,49 +126,48 @@ def clean_ingredients(ingredients_list):
     *) Remove spaces around commas
     *) Remove ingredient percentages (i.e. beef (12%)) -> beef
     *) Convert most brackets [] & () in lists to commas
-    *) Remove "(from " allergen markup (i.e. Lactose (from Milk) -> Lactose (Milk) - should leave only left bracket
+    *) Remove "(from " allergen markup (i.e. Lactose (from Milk) -> Lactose (Milk)
     *) Remove "(in varying... proportions)"
     *) Remove "(of which...)"
     *) Remove ("From sustainable organic production")
     *) Remove trailing commas, full stops, spaces
     *) Remove all ":" and "*"
-    *) Remove "LIST:\n\n\n" noise:
+    *) Remove "LIST:\n\n\n" noise
 
     """
     # Check whether it is a string to attempt matching (might be NaN) - return if not
     if not isinstance(ingredients_list, str):
         return ""
-    #print ("Before\t: {}"*.format(ingredients_list))
-    #Apply the regex to clean out "Ingredients:" type things:
+
+    # Apply the regex to clean out "Ingredients:" type things:
     ingrid_re = re.compile('(Ingredients)|(INGREDIENTS) *(LIST)*:*', re.IGNORECASE)
     ingredients_list = re.sub(ingrid_re, "", str(ingredients_list))
     ingredients_list = re.sub(re.compile("LIST *:* *[\n\r]+"), "", ingredients_list)
-    #Also spaces before / after commas: just annoying:
-    ingredients_list = re.sub(re.compile(" ,|, "), ",", ingredients_list)
-    #Any percentages we suppress: Beef Mince (12%)
+
+    # Any percentages we suppress: Beef Mince (12%)
     ingredients_list = re.sub(re.compile(" *\([\d.]+%\)"), "", ingredients_list)
 
-    #Convert brackets to commas: , Sundried Tomato Sauce (2%) [Sundried Tomatoes, Toma...
-    ingredients_list = re.sub(re.compile(" *(\[).*?,"), ",", ingredients_list)
-    ingredients_list = re.sub(re.compile("(\])"), ",", ingredients_list)
-    ingredients_list = re.sub(re.compile("\]"), ",", ingredients_list)
-    #Convert opening brackets to commas: ...r, Beef Powder (Cooked Beef Fat,...
-    ingredients_list = re.sub(re.compile(" *?(\()(?!from)([\w ]+?),"),",\g<2>,", ingredients_list)
-    # Same - but the end bracket ...High Oleic Sunflower Oil),..
-    ingredients_list = re.sub(re.compile(",(?!from)([\w ]+?)\),"), ",", ingredients_list)
-    #Decompose lists into their component parts:
-    #ingredients_list = re.sub(re.compile("(.*? *\()(?:.*?,.*?\))"), "", ingredients_list)
-    # Suppress common phrases:
-    #   (in varying proportions - XXX, YYY, ZZZ)
-    ingredients_list = re.sub(re.compile("(\(in varying proportions *-*) *",re.IGNORECASE), "", ingredients_list)
-    #   (from XXX)
-    ingredients_list = re.sub(re.compile("(\(from )(\w+)\)",re.IGNORECASE), "(\g<2>)", ingredients_list)
-    #(of which xxx is Blah):
-    ingredients_list = re.sub(re.compile("\(of which.{0,6}? is.{0,15}?\)",re.IGNORECASE),"", ingredients_list)
+    # Remove " from (Allergen) specifically:
+    # "...Galacto-Oligosaccharides (GOS) (from Milk),Whey Protein (from Milk),"
+    # but leave: "...(from Palm/Shea/Sal/Illipe/Kokum Gurgi/Mango Kernel)..."
+    ingredients_list = re.sub(re.compile(" *\((from [\w]*)\)"), "", ingredients_list)
 
-    #(*From Sustainable Organic production)
-    ingredients_list = re.sub(re.compile("From Sustainable Organic production",re.IGNORECASE), "", ingredients_list)
-    #Final cleanup of basic punctuation
+    #Now remove the from in "...(from X,Y,Z)..." and convert to comma
+    ingredients_list = re.sub(re.compile(" *\(from *:*"), ",", ingredients_list)
+
+    # Convert all remaining brackets to commas: ...r, Beef Powder (Cooked Beef Fat,...
+    ingredients_list = re.sub(re.compile("([\[\]])"), ",", ingredients_list)
+
+    # Suppress common phrases:
+    # (in varying proportions - XXX, YYY, ZZZ)
+    ingredients_list = re.sub(re.compile("(\(in varying proportions *-*) *", re.IGNORECASE), "", ingredients_list)
+    # (of which xxx is Blah):
+    ingredients_list = re.sub(re.compile("\(of which.{0,6}? is.{0,15}?\)", re.IGNORECASE), "", ingredients_list)
+    #
+    # (*From Sustainable Organic production)
+    ingredients_list = re.sub(re.compile("From Sustainable Organic production", re.IGNORECASE), "", ingredients_list)
+
+    # Final cleanup of basic punctuation
     ingredients_list = re.sub(re.compile(",$"), "", ingredients_list)
     ingredients_list = re.sub(re.compile(",{2,}"), ",", ingredients_list)
     # Remove any leading spaces or trailing 'full stops', spaces, colons etc:
@@ -175,9 +175,24 @@ def clean_ingredients(ingredients_list):
     ingredients_list = re.sub(re.compile("\ *\.$"), "", ingredients_list)
     ingredients_list = re.sub(re.compile("\*"), "", ingredients_list)
     ingredients_list = re.sub(re.compile("^ *: *"), "", ingredients_list)
+    # Also spaces before / after commas mess up the matching so remove:
+    ingredients_list = re.sub(re.compile(" ,|, "), ",", ingredients_list)
 
-    #print ("After\t: {}".format(ingredients_list))
-    return ingredients_list
+    """
+    To preserve the order of most frequent ingredients first we don't simply use a set and instead
+    add to a list if the item isn't present already.
+    (Then 'join' using commas back into a text string and title case it.
+    """
+    unique_list = []
+    for x in list(ingredients_list.split(",")):
+        if x not in unique_list:
+            unique_list.append(x)
+
+    unique_list_as_string = ",".join(unique_list)
+    unique_list_as_string = unique_list_as_string.title()
+    #And return as a string, not a list
+    return unique_list_as_string
+
 
 def convert_weight(weight):
     """
@@ -233,11 +248,12 @@ def clean_allergens(al_string):
 
     # Basic punctuation cleanup/out:
     al_string = re.sub(re.compile(', *'), ",", str(al_string))
-    al_string = re.sub(re.compile('\.$'), "", str(al_string)) #Not working?  "GardenPeas." is coming through?
+    al_string = re.sub(re.compile('\.$'), "", str(al_string))  # Not working?  "GardenPeas." is coming through?
     al_string = re.sub(re.compile(': *'), ": ", str(al_string))
 
     return al_string
 
-#This construct to allow functions in any order:
+
+# This construct to allow functions in any order:
 if __name__ == '__main__':
     main()
