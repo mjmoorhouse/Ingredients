@@ -91,14 +91,6 @@ ctable_extra_css = """
 #Might be useful if printing dataframes to terminal, otherwise causes no harm:
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
-def example_product_list():
-    """
-    Really simple helper function to fix/fake the search terms:
-    :return:
-    """
-    #return ["Salt"]
-    return ["milk", "whey", "Lactose","Salt","'Salt'"]
-    #return ["milk","Salt"]
 
 def main():
     """
