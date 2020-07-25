@@ -5,6 +5,16 @@ Ingredients module: useful, common routines for general use including:
 
 """
 import re
+
+def example_product_list():
+    """
+    Really simple helper function to fix/fake the search terms:
+    - but something to demonstrate operation on i
+    """
+    #return ["Salt"]
+    return ["milk", "whey", "Lactose","Salt","'Salt'"]
+    #return ["milk","Salt"]
+
 def get_CSS_table_styles_dictionary():
     styles = [
         dict(selector="table", props =[("table-layout","fixed"),
