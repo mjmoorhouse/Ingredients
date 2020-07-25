@@ -146,8 +146,8 @@ def main():
         #
     else:
         # Nothing passed - so run with the internal hard coded list:
-        print ("Using internal ingredients list: '{}'".format(example_product_list()))
-        query_ingredients_list = example_product_list()
+        query_ingredients_list = ind.example_product_list()
+        print ("Using internal ingredients list: '{}'".format(query_ingredients_list))
     print ("Using ingredients list and search tag: '{}' & '{}'".format(query_ingredients_list, search_tag))
 
     # Read the data in:
