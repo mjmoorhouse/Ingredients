@@ -233,8 +233,8 @@ def match_df_column(passed_df = None, search_in_column = None, ingredient = None
     search_re = build_ingredient_search_regex(ingredient)
     # This is an intermediate step: if you want to see the matching effects:
     match_bool_array = (passed_df[search_in_column].str.match(search_re))
-    print ("Number of matches of '{}' is '{}'; details:\n'{}'".
-           format(ingredient, sum(match_bool_array), match_bool_array))
+    # print ("Number of matches of '{}' is '{}'; details:\n'{}'".
+    #        format(ingredient, sum(match_bool_array), match_bool_array))
     # Hence sub-set of dataframe is:
 
     # Select based on the Boolean opperation for inspection purposes:
