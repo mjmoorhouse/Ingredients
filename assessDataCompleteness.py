@@ -106,6 +106,9 @@ def main():
     """
     Pretty Print 2/3: A stacked graph of the same as the above table:
     If without the total column as we want the components.
+    
+    [Note that this code is very similar to that found in highlightIngredientFrequenct.py - it came from here.
+    Ultimately we should factorise this out - but not today.]
     """
     #Delete the 'total' count:
     group_counts_df.drop(columns="Number of Products", inplace=True)

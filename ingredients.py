@@ -5,6 +5,7 @@ Ingredients module: useful, common routines for general use including:
 
 """
 import re
+import pandas as pd
 
 def example_product_list():
     """
@@ -181,6 +182,65 @@ def write_item_to_file(text, out_fname):
     except:
         return 1
     return 0
+
+def build_ingredient_search_regex (term = None):
+    """
+    Handles the building of Regexs with surrounding '' to mean exact match or a liberal just-match-somewhere:
+    :param term:
+    :return: a regex object, fully built is ready to apply with a construct like:
+
+
+
+    Typical usage:
+    result = search_re.search(c_ingredient)
+
+    or
+
+    match_bool_array = (passed_df[search_in_column].str.match(search_re))
+    """
+    #Simple param check:
+    if term == None:
+        return None
+    # Should we use exact matching or partial matching: (Yes: if the the target in enclosed in ' ie. 'Salt')
+    if re.match(r"^'.*?'$", term):
+        # i.e. exact match:
+        local_re = re.compile(str('^' + term[1:-1] + '$'), re.IGNORECASE)
+    else:
+        # Allow partial, fancy matches:
+        local_re = re.compile('(?<![(])' + term + '(?![)])', re.IGNORECASE)
+    return local_re
+
+def match_df_column(passed_df = None, search_in_column = None, ingredient = None):
+    """
+    When called with a dataframe, a column name and an ingredient it returns the sub-set dataframe with matches to
+    that ingredient.
+    On failure, returns none.  A check is done for the existence of the column in the df - returns none if not found.
+
+    If the ingredient is surrounded in '' then an exact match is required.
+    Typical useage:
+    interesting_stuff_df = ind.match_df_column(counts_df, 'Ingredient', c_target_ingredient)
+
+    :param df_passed: The dataframe to be subset
+    :param column: The column in the df to subset
+    :param ingredient: The ingredient tag - will be converted into a Regex
+    :return: a subset dataframe or None on failure
+    """
+    # Basic parameter checking: did we get a Dataframe and two strings?
+    if not (isinstance(passed_df, pd.DataFrame)
+            and isinstance(search_in_column, str)
+            and isinstance(ingredient, str)):
+        return None
+    search_re = build_ingredient_search_regex(ingredient)
+    # This is an intermediate step: if you want to see the matching effects:
+    match_bool_array = (passed_df[search_in_column].str.match(search_re))
+    print ("Number of matches of '{}' is '{}'; details:\n'{}'".
+           format(ingredient, sum(match_bool_array), match_bool_array))
+    # Hence sub-set of dataframe is:
+
+    # Select based on the Boolean opperation for inspection purposes:
+    subset_def = passed_df[match_bool_array]
+
+    return subset_def
 
 def write_df_to_pretty_table(df_passed, out_fname, caption=None):
     """

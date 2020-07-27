@@ -203,31 +203,23 @@ def main():
             problematic_ingredients.append(raw_ingredients)
             product_ids_to_remove.append(c_index)
             continue
-        #When we find a  match: flip this 'bit' to prevent the product getting added to the removal list:
+        # When we find a  match: flip this 'bit' to prevent the product getting added to the removal list:
         no_match_marker = True
 
-        #Test - properly this time - the ingredients we are searching for against the ingredients list:
+        # Test - properly this time - the ingredients we are searching for against the ingredients list:
         for c_target_ingredient in query_ingredients_list:
-            #The regex used to match needs to be scoped outside the conditional statement block:
-            search_re = None
-            #Should we use exact matching or partial matching: (Yes: if the the target in enclosed in ' ie. 'Salt')
-            if re.match(r"^'.*?'$", c_target_ingredient):
-                #i.e. exact match:
-                search_re = re.compile(str('^'+c_target_ingredient[1:-1]+'$'),re.IGNORECASE)
-            else:
-                #Allow partial, fancy matches:
-                search_re = re.compile('(?<![(])'+c_target_ingredient+'(?![)])',re.IGNORECASE)
-
-            #Try to match all the ingredients in all the products:
+            # Use the module to build the Regex object:
+            search_re = ind.build_ingredient_search_regex(c_target_ingredient)
+            # Try to match all the ingredients in all the products:
             for c_ingredient in split_ingredients:
-                #Do the search (ignoring the upper/lower case)
+                # Do the search (ignoring the upper/lower case)
                 result = search_re.search(c_ingredient)
-                #Result of a actually match is not 'None', - so there is data to extract:
+                # Result of a actually match is not 'None', - so there is data to extract:
 
                 if result:
-                    #First a match reqiires we to keep this product in the table:
+                    # First a match reqiires we to keep this product in the table:
                     no_match_marker = False
-                    #Get the boundaries of the text match:
+                    # Get the boundaries of the text match:
                     start, end = result.span()
                     #Ask for the text marking up and store the result in the dataframe:
                     html_markup = markup_ingredient_text(c_ingredient, start, end)

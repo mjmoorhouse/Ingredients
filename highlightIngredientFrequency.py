@@ -91,12 +91,72 @@ def main():
     if 'Unnamed: 0' in counts_df.columns:
         print ("Resetting column name to 'Rank' and reindexing ")
         counts_df.rename(columns={'Unnamed: 0':'Rank'}, inplace=True)
-        counts_df.set_index('Rank',inplace=True)
+        counts_df.reset_index(drop = True, inplace=True)
 
-    print (len(counts_df))
+    print ("Raw table has = '{}' rows (length is)".format(len(counts_df)))
     print (counts_df.columns)
 
     print (counts_df.head())
+    counts_df['Ingredient'] = [x.upper() for x in counts_df['Ingredient'] ]
+    print(counts_df.head())
+    #print ("All uppercase: '{}'".format(ingredient_list_uc))
+    #To store the locations of the ingredient matches:
+    """
+    We are trying to mimic this line:
+    if len(mega_data_df.loc[(mega_data_df['Product ID'] == c_id_value)]) == 0:
+    """
+    matches = dict()
+    #To store the points we are going to label:
+    annotations = list()
+    # utterly fake this if we just want to test the top 'hits'
+    import re
+    #query_ingredients_list = ['Salt']
+    for c_target_ingredient in query_ingredients_list:
+
+        print ("Testing ingredient: '{}'".format(c_target_ingredient))
+        ingredient_matches_df = ind.match_df_column(counts_df, 'Ingredient', c_target_ingredient)
+        print (ingredient_matches_df)
+        #
+        # ###Pasting from makeOverlapMatrix.py START
+        # # Should we use exact matching or partial matching: (Yes: if the the target in enclosed in ' ie. 'Salt')
+        # if re.match(r"^'.*?'$", c_target_ingredient):
+        #     # i.e. exact match:
+        #     search_re = re.compile(str('^' + c_target_ingredient[1:-1] + '$'), re.IGNORECASE)
+        # else:
+        #     # Allow partial, fancy matches:
+        #     search_re = re.compile('(?<![(])' + c_target_ingredient + '(?![)])', re.IGNORECASE)
+        # ###Pasting from makeOverlapMatrix.py END
+        #
+        # match_bool_array = (counts_df['Ingredient'].str.match(search_re))
+        #
+        # # Select based on the Boolean opperation for inspection purposes:
+        # print (counts_df[match_bool_array])
+        # # We just need a list
+        # matches_list = counts_df[match_bool_array]['Rank'].tolist()
+
+        """
+        Plot a graph....similar to the ingredients counts - but with the extra 'layer' / series.
+        Really the plotting should be factorised away ultimately with a function common to assessDataCompleteness.py - 
+        but not today. 
+        """
+        # print ("Ranks are:\n'{}'".format(matches['Rank']))
+        #matches.reindex_like(counts_df)
+        #matches.reindex()
+        #matches.reindex()
+        #matches.reset_index(drop = True, inplace = True)
+        # print("Matches after index drop:\n'{}'".format(matches))
+        # # match_lis
+        # print("Ranks are:\n'{}'".format(matches['Rank'].tolist()))
+        # print ("Matches: Typeof: '{}'".format(type(matches)))
+        # # matches.set_index('Rank', inplace=True)
+        # print ("Columns are: '{}'".format(matches.columns))
+        # # print ("Matches: '{}'".format(matches))
+        # this_rank = matches['Rank']
+        # print("Info is: '{}'".format(matches.info()))
+        # print ("Type ofs: '{}'".format(type(this_rank)))
+        # print ("Ranks are: '{}'".format(matches['Rank']))
+        # #print (counts_df[(counts_df['Ingredient'] == c_target_ingredient.upper())])
+        # print ()
 #This construct to allow functions in any order:
 if __name__ == '__main__':
     main()
