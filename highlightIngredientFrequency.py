@@ -116,28 +116,10 @@ def main():
         print ("Testing ingredient: '{}'".format(c_target_ingredient))
         ingredient_matches_df = ind.match_df_column(counts_df, 'Ingredient', c_target_ingredient)
         print (ingredient_matches_df)
-        #
-        # ###Pasting from makeOverlapMatrix.py START
-        # # Should we use exact matching or partial matching: (Yes: if the the target in enclosed in ' ie. 'Salt')
-        # if re.match(r"^'.*?'$", c_target_ingredient):
-        #     # i.e. exact match:
-        #     search_re = re.compile(str('^' + c_target_ingredient[1:-1] + '$'), re.IGNORECASE)
-        # else:
-        #     # Allow partial, fancy matches:
-        #     search_re = re.compile('(?<![(])' + c_target_ingredient + '(?![)])', re.IGNORECASE)
-        # ###Pasting from makeOverlapMatrix.py END
-        #
-        # match_bool_array = (counts_df['Ingredient'].str.match(search_re))
-        #
-        # # Select based on the Boolean opperation for inspection purposes:
-        # print (counts_df[match_bool_array])
-        # # We just need a list
-        # matches_list = counts_df[match_bool_array]['Rank'].tolist()
+
 
         """
-        Plot a graph....similar to the ingredients counts - but with the extra 'layer' / series.
-        Really the plotting should be factorised away ultimately with a function common to assessDataCompleteness.py - 
-        but not today. 
+        Plot a graph....similar to the ingredients counts - but with the extra 'layer' / series. 
         """
         # print ("Ranks are:\n'{}'".format(matches['Rank']))
         #matches.reindex_like(counts_df)
