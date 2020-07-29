@@ -97,7 +97,10 @@ def main():
     print (counts_df.columns)
 
     print (counts_df.head())
+    # Everything to Upper case for comparison / matching:
     counts_df['Ingredient'] = [x.upper() for x in counts_df['Ingredient'] ]
+
+    # If you are interested in looking:
     print(counts_df.head())
     #print ("All uppercase: '{}'".format(ingredient_list_uc))
     #To store the locations of the ingredient matches:
@@ -115,30 +118,52 @@ def main():
 
         print ("Testing ingredient: '{}'".format(c_target_ingredient))
         ingredient_matches_df = ind.match_df_column(counts_df, 'Ingredient', c_target_ingredient)
-        print (ingredient_matches_df)
+        print (" : {} hits returned: '{}'".format(len(ingredient_matches_df),
+               ingredient_matches_df['Ingredient'].tolist()))
 
 
         """
         Plot a graph....similar to the ingredients counts - but with the extra 'layer' / series. 
         """
-        # print ("Ranks are:\n'{}'".format(matches['Rank']))
-        #matches.reindex_like(counts_df)
-        #matches.reindex()
-        #matches.reindex()
-        #matches.reset_index(drop = True, inplace = True)
-        # print("Matches after index drop:\n'{}'".format(matches))
-        # # match_lis
-        # print("Ranks are:\n'{}'".format(matches['Rank'].tolist()))
-        # print ("Matches: Typeof: '{}'".format(type(matches)))
-        # # matches.set_index('Rank', inplace=True)
-        # print ("Columns are: '{}'".format(matches.columns))
-        # # print ("Matches: '{}'".format(matches))
-        # this_rank = matches['Rank']
-        # print("Info is: '{}'".format(matches.info()))
-        # print ("Type ofs: '{}'".format(type(this_rank)))
-        # print ("Ranks are: '{}'".format(matches['Rank']))
-        # #print (counts_df[(counts_df['Ingredient'] == c_target_ingredient.upper())])
-        # print ()
-#This construct to allow functions in any order:
+        ingredient_matches_df.reset_index(drop=True,inplace=True)
+        # ingredient_matches_df.drop('Rank', inplace=True)
+        print (ingredient_matches_df.head())
+        sb.set(style="whitegrid")
+        bar_colors = ["#80dd80"]
+        #ax = ""
+        top_ing_axs = plt.gca()
+        top_ing_axs = counts_df.plot(x="Rank",
+                                    y="Count", kind="line",ax=top_ing_axs,
+                                    title="Counts for Ingredient '" + c_target_ingredient+ "'",
+                                    marker="None",
+                                     color="grey", linestyle='-')
+        print ("'{}'".format(ingredient_matches_df.Rank))
+        top_ing_axs.set_ylabel("Count")
+        # plt.subplots_adjust(bottom=0.4)
+
+        # Adapt the plot - titles & ticks:
+        plt.yscale("log")
+        #So we have the full range in on the tick marks:
+        min_val = min(counts_df['Count'])
+        max_val = max(counts_df['Count'])
+        plt.yticks([min_val,2,5,10,50,100,200,500,1000, max_val], (min_val,2,5, 10,50,100,200,500,1000, max_val))
+        # Name the axes:
+        top_ing_axs.set_ylabel("Count")
+        top_ing_axs.set_xlabel("Rank Order")
+
+        # Plot the second dataset: the specific matches of the ingredients:
+        ingredient_matches_df.plot(kind="line", x="Rank", ax=top_ing_axs,
+                                    linestyle="None", marker="o")
+
+        # Add the point labels - in title case and their counts e.g.: "Milk in Powder Form (n)"
+        for x,y,text in zip(ingredient_matches_df.Rank, ingredient_matches_df.Count, ingredient_matches_df.Ingredient):
+            # Just build the separately for now:
+            point_label = text.title() + " ("+ str (y) + ")"
+            plt.annotate(point_label, (x,y),rotation=45, fontsize=10, xytext=(4,5),
+              textcoords='offset points')
+
+        top_ing_axs.legend(["All Ingredient Counts","Counts for '"+c_target_ingredient+"'"])
+        plt.show(block=True)
+        sys.exit(0)
 if __name__ == '__main__':
     main()
