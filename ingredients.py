@@ -147,14 +147,20 @@ def render_df_to_html(df_passed, caption=None):
     #Truncate the numeric column values to 0 d.p. for output and ommit nan completely:
     #Cache the types as a list specifically:
     column_types = list(internal_df.dtypes)
+    print ("Column names are: {}".format(internal_df.columns))
     #Iterate through these: - just a little too complicated for a neat list comprehension:
+    style_dict = dict()
     for c_col_indx in range(0,len(column_types)):
         c_col_type = column_types[c_col_indx]
+        print ("Column {} has type {}".format(internal_df.columns[c_col_indx],c_col_type))
         if c_col_type == "int64" or c_col_type == "float64":
             col_name = internal_df.columns[c_col_indx]
             print ("Column name to change to integer: '{}'".format(col_name))
-            internal_styler.format({col_name: '{:g}'}, na_rep='')
-
+            style_dict[col_name]='{:.0f}'
+            # internal_styler.format({col_name: '{:g}'}, na_rep='')
+    #
+    internal_styler.format(style_dict,  na_rep='')
+    print ("Styles being applied are: {}".format(style_dict))
     #Hide the index column:
     internal_styler.hide_index()
 

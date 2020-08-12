@@ -350,7 +350,11 @@ def main():
     """
 
     # #Set all the column data types to integer:
+    # print("Columns: '{}'".format(list(short_ingredient_hits_df.columns())))
     print ("Data types: '{}'".format(list(short_ingredient_hits_df.dtypes)))
+
+    # short_ingredient_hits_df["Product ID"] = short_ingredient_hits_df["Product ID"].apply(pd.to_integer)
+
     # print (short_ingredient_hits_df.columns)
     # ct_dtypes = list(short_ingredient_hits_df.dtypes)
     # for c_col_indx in range (1,len(ct_dtypes)):
