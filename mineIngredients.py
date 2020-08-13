@@ -279,7 +279,7 @@ def main():
     short_ingredient_hits_df.reset_index(inplace=True)
 
     #['Ingredient'] = short_ingredient_hits_df.index
-    short_ingredient_hits_df = short_ingredient_hits_df.astype(int, errors='ignore')
+    # short_ingredient_hits_df = short_ingredient_hits_df.astype(int, errors='ignore')
 
     """
     HTML Table rendering:
@@ -290,10 +290,14 @@ def main():
     #than back-hacking the HTML afterwards with Regexs.
     #Set nan to empty, truly:
     products_df['Comments'].fillna("",inplace=True)
+    print ("Column names are: '{}'".format(products_df.columns))
+
     #Relabel the weight:
     if 'Weight' in products_df.columns:
-        products_df.rename(columns={"Weight":"Weight (g)"}, inplace=True)
-
+        products_df.rename(columns = {"Weight":"Weight (g)"}, inplace=True)
+        products_df = products_df.astype({'Weight (g)':'Int64'})
+    print ("Column types are: {}".format(products_df.dtypes))
+    # sys.exit(0)
     # Send off the data for rendering to HTML in the 'House Style'
     pm_html_table = ind.render_df_to_html(products_df,
                     "Results of {} products search of '{}'".
@@ -348,20 +352,24 @@ def main():
     HTML Table rendering:
     2) The counts of ingredients observed
     """
-
-    # #Set all the column data types to integer:
-    # print("Columns: '{}'".format(list(short_ingredient_hits_df.columns())))
-    print ("Data types: '{}'".format(list(short_ingredient_hits_df.dtypes)))
-
-    # short_ingredient_hits_df["Product ID"] = short_ingredient_hits_df["Product ID"].apply(pd.to_integer)
-
-    # print (short_ingredient_hits_df.columns)
-    # ct_dtypes = list(short_ingredient_hits_df.dtypes)
-    # for c_col_indx in range (1,len(ct_dtypes)):
-    #     col_name = short_ingredient_hits_df.columns[c_col_indx]
-    #     print ("column name = '{}'".format(col_name))
-    #     short_ingredient_hits_df[col_name] = short_ingredient_hits_df[col_name].astype(int)
-
+    print ("Starting Ingredient Counts Table Rendering")
+    # Set all the column data types of the Ingredients to integer:
+    # NB:s the Pandas Int64 (allows NAs), not the NumPy int64
+    # Get the types - though really we use the len of the list programatically
+    ct_dtypes = list(short_ingredient_hits_df.dtypes)
+    print ("Column types before: '{}'".format(ct_dtypes))
+    # The new types (all Int64 actually) are added here linked to the column name:
+    new_dtypes = dict()
+    # Everything but the first column (the ingredient):
+    for c_col_indx in range (1,len(ct_dtypes)):
+        col_name = short_ingredient_hits_df.columns[c_col_indx]
+        # Printout for if anybody is watching:
+        print ("Setting column '{}' to Int64 (integer allowing the NaN)".format(col_name))
+        new_dtypes[col_name] = "Int64"
+    # Set the column types:
+    short_ingredient_hits_df = short_ingredient_hits_df.astype(new_dtypes)
+    # For the 'before and after' status:
+    print("Column types after: '{}'".format(list(short_ingredient_hits_df.dtypes)))
 
 
     #Render the dataframe to an HTML table:

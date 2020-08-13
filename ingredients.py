@@ -144,21 +144,28 @@ def render_df_to_html(df_passed, caption=None):
     #Set the table styles to the default
     internal_styler.set_table_styles(get_CSS_table_styles_dictionary())
 
-    #Truncate the numeric column values to 0 d.p. for output and ommit nan completely:
-    #Cache the types as a list specifically:
+    #Truncate the numeric column values to 0 d.p. for integer output - this includes the Product ID
+    #Cache the types as a list specifically (in use we only care about the number...but OK)
     column_types = list(internal_df.dtypes)
-    print ("Column names are: {}".format(internal_df.columns))
+    print ("Column types are: '{}'".format(column_types))
+    # print ("Column names are: {}".format(internal_df.columns))
     #Iterate through these: - just a little too complicated for a neat list comprehension:
     style_dict = dict()
     for c_col_indx in range(0,len(column_types)):
         c_col_type = column_types[c_col_indx]
-        print ("Column {} has type {}".format(internal_df.columns[c_col_indx],c_col_type))
-        if c_col_type == "int64" or c_col_type == "float64":
-            col_name = internal_df.columns[c_col_indx]
-            print ("Column name to change to integer: '{}'".format(col_name))
+        col_name = internal_df.columns[c_col_indx]
+        print ("Column {} has type {}".format(col_name,c_col_type))
+        # Is the column flagged as a integer?
+        if c_col_type == "int64" or c_col_type == "Int64":
+            print ("Column '{}' to change to *integer*".format(col_name))
             style_dict[col_name]='{:.0f}'
-            # internal_styler.format({col_name: '{:g}'}, na_rep='')
-    #
+        # Is the columne flagged as a float (if so: allow a couple of Dec. Places)
+        if c_col_type == "float64":
+            print ("Column '{}' changed to 2 d.p. *float*".format(col_name))
+            style_dict[col_name]='{:.2f}'
+        if c_col_type == "O":
+            print ("Column '{}' changed to *general* as mixed".format(col_name))
+            style_dict[col_name]='{:}'
     internal_styler.format(style_dict,  na_rep='')
     print ("Styles being applied are: {}".format(style_dict))
     #Hide the index column:
