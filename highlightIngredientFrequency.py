@@ -146,6 +146,7 @@ def main():
         #So we have the full range in on the tick marks:
         min_val = min(counts_df['Count'])
         max_val = max(counts_df['Count'])
+        # Terrible hard coded values for the tick axises here...a point for improvement.
         plt.yticks([min_val,2,5,10,50,100,200,500,1000, max_val], (min_val,2,5, 10,50,100,200,500,1000, max_val))
         # Name the axes:
         top_ing_axs.set_ylabel("Count")
