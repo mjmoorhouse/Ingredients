@@ -83,25 +83,54 @@ def main():
     print("Using ingredients list and search tag: '{}' & '{}'".format(query_ingredients_list, search_tag))
     try:
         counts_df = pd.read_csv(rankOrderFile,sep='\t')
-    except Exception as S:
+    except Exception as error_recvd:
         print ("ERROR: Cannot read the counts of ingredient ranks '{}'".format(rankOrderFile))
-        print (S)
+        print (error_recvd)
         sys.exit(1)
+
+    for c_target_ingredient in query_ingredients_list:
+        graph_fname = c_target_ingredient[0:4]+"highcount.png"
+        print ("Drawing  graphand highlighting ingredient '{}'".format(c_target_ingredient))
+
+        result = draw_count_graph_with_highlighting(counts_df, c_target_ingredient, graph_fname)
+
+    """
+    So break here: loading routines above, graph below of the original 
+    """
+def draw_count_graph_with_highlighting(passed_df = None, hlight_ingredient = None, outfile_name = None):
+    """
+
+    :param passed_df: The dataframe of the rank of, the ingredient and its count with an index column called "Unnamed: 0"
+        as this seems to be the
+    :param hlight_ingredient: which ingredient to be highlighted as defined by ind.match_df_column() - so
+        likely honours '' around the string to denote 'exact match'
+    :param outfile_name: this is the name the
+    :return: None or 1 on failure
+
+    dataframe has a structure like this:
+       Unnamed: 0   Ingredient  Count
+    0           0         Salt    650
+    1           1        Sugar    512
+    2           2        Water    425
+    3           3      Thiamin    353
+    4           4  Wheat Flour    344
+    """
     # If we are loading from FS then reseting column names and the index might be useful
-    if 'Unnamed: 0' in counts_df.columns:
+    print ("DCGwH: Starting: Ingredient\t'{}', FName: '{}'".format(hlight_ingredient, outfile_name))
+    if 'Unnamed: 0' in passed_df.columns:
         print ("Resetting column name to 'Rank' and reindexing ")
-        counts_df.rename(columns={'Unnamed: 0':'Rank'}, inplace=True)
-        counts_df.reset_index(drop = True, inplace=True)
+        passed_df.rename(columns={'Unnamed: 0':'Rank'}, inplace=True)
+        passed_df.reset_index(drop = True, inplace=True)
 
-    print ("Raw table has = '{}' rows (length is)".format(len(counts_df)))
-    print (counts_df.columns)
+    print ("Raw table has = '{}' rows (length is)".format(len(passed_df)))
+    print (passed_df.columns)
 
-    print (counts_df.head())
+    print (passed_df.head())
     # Everything to Upper case for comparison / matching:
-    counts_df['Ingredient'] = [x.upper() for x in counts_df['Ingredient'] ]
+    passed_df['Ingredient'] = [x.upper() for x in passed_df['Ingredient'] ]
 
     # If you are interested in looking:
-    print(counts_df.head())
+    print(passed_df.head())
     #print ("All uppercase: '{}'".format(ingredient_list_uc))
     #To store the locations of the ingredient matches:
     """
@@ -114,57 +143,60 @@ def main():
     # utterly fake this if we just want to test the top 'hits'
     import re
     #query_ingredients_list = ['Salt']
-    for c_target_ingredient in query_ingredients_list:
 
-        print ("Testing ingredient: '{}'".format(c_target_ingredient))
-        ingredient_matches_df = ind.match_df_column(counts_df, 'Ingredient', c_target_ingredient)
-        print (" : {} hits returned: '{}'".format(len(ingredient_matches_df),
-               ingredient_matches_df['Ingredient'].tolist()))
+    print ("Testing ingredient: '{}'".format(hlight_ingredient))
+    ingredient_matches_df = ind.match_df_column(passed_df, 'Ingredient', hlight_ingredient)
+    print (" : {} hits returned: '{}'".format(len(ingredient_matches_df),
+           ingredient_matches_df['Ingredient'].tolist()))
 
 
-        """
-        Plot a graph....similar to the ingredients counts - but with the extra 'layer' / series. 
-        """
-        ingredient_matches_df.reset_index(drop=True,inplace=True)
-        # ingredient_matches_df.drop('Rank', inplace=True)
-        print (ingredient_matches_df.head())
-        sb.set(style="whitegrid")
-        bar_colors = ["#80dd80"]
-        #ax = ""
-        top_ing_axs = plt.gca()
-        top_ing_axs = counts_df.plot(x="Rank",
-                                    y="Count", kind="line",ax=top_ing_axs,
-                                    title="Counts for Ingredient '" + c_target_ingredient+ "'",
-                                    marker="None",
-                                     color="grey", linestyle='-')
-        print ("'{}'".format(ingredient_matches_df.Rank))
-        top_ing_axs.set_ylabel("Count")
-        # plt.subplots_adjust(bottom=0.4)
+    """
+    Plot a graph....similar to the ingredients counts - but with the extra 'layer' / series. 
+    """
+    ingredient_matches_df.reset_index(drop=True,inplace=True)
+    # ingredient_matches_df.drop('Rank', inplace=True)
+    print (ingredient_matches_df.head())
+    sb.set(style="whitegrid")
+    bar_colors = ["#80dd80"]
+    #ax = ""
+    top_ing_axs = plt.gca()
+    top_ing_axs = passed_df.plot(x="Rank",
+                                y="Count", kind="line",ax=top_ing_axs,
+                                title="Counts for Ingredient '" + hlight_ingredient + "'",
+                                marker="None",
+                                 color="grey", linestyle='-')
+    print ("'{}'".format(ingredient_matches_df.Rank))
+    top_ing_axs.set_ylabel("Count")
+    # plt.subplots_adjust(bottom=0.4)
 
-        # Adapt the plot - titles & ticks:
-        plt.yscale("log")
-        #So we have the full range in on the tick marks:
-        min_val = min(counts_df['Count'])
-        max_val = max(counts_df['Count'])
-        # Terrible hard coded values for the tick axises here...a point for improvement.
-        plt.yticks([min_val,2,5,10,50,100,200,500,1000, max_val], (min_val,2,5, 10,50,100,200,500,1000, max_val))
-        # Name the axes:
-        top_ing_axs.set_ylabel("Count")
-        top_ing_axs.set_xlabel("Rank Order")
+    # Adapt the plot - titles & ticks:
+    plt.yscale("log")
+    #So we have the full range in on the tick marks:
+    min_val = min(passed_df['Count'])
+    max_val = max(passed_df['Count'])
+    # Terrible hard coded values for the tick axises here...a point for improvement.
+    plt.yticks([min_val,2,5,10,50,100,200,500,1000, max_val], (min_val,2,5, 10,50,100,200,500,1000, max_val))
+    # Name the axes:
+    top_ing_axs.set_ylabel("Count")
+    top_ing_axs.set_xlabel("Rank Order")
 
-        # Plot the second dataset: the specific matches of the ingredients:
-        ingredient_matches_df.plot(kind="line", x="Rank", ax=top_ing_axs,
-                                    linestyle="None", marker="o")
+    # Plot the second dataset: the specific matches of the ingredients:
+    ingredient_matches_df.plot(kind="line", x="Rank", ax=top_ing_axs,
+                                linestyle="None", marker="o",figsize=(8,6))
 
-        # Add the point labels - in title case and their counts e.g.: "Milk in Powder Form (n)"
-        for x,y,text in zip(ingredient_matches_df.Rank, ingredient_matches_df.Count, ingredient_matches_df.Ingredient):
-            # Just build the separately for now:
-            point_label = text.title() + " ("+ str (y) + ")"
-            plt.annotate(point_label, (x,y),rotation=45, fontsize=10, xytext=(4,5),
-              textcoords='offset points')
+    # Add the point labels - in title case and their counts e.g.: "Milk in Powder Form (n)"
+    for x,y,text in zip(ingredient_matches_df.Rank, ingredient_matches_df.Count, ingredient_matches_df.Ingredient):
+        # Just build the separately for now:
+        point_label = text.title() + " ("+ str (y) + ")"
+        plt.annotate(point_label, (x,y),rotation=45, fontsize=10, xytext=(4,5),
+          textcoords='offset points')
 
-        top_ing_axs.legend(["All Ingredient Counts","Counts for '"+c_target_ingredient+"'"])
-        plt.show(block=True)
-        sys.exit(0)
+    top_ing_axs.legend(["All Ingredient Counts","Counts for '" + hlight_ingredient + "'"])
+    # plt.show(block=True)
+    print ("Saving graph as: '{}'".format(outfile_name))
+    plt.savefig(outfile_name)#
+    plt.clf()
+    # sys.exit(0)
+
 if __name__ == '__main__':
     main()
