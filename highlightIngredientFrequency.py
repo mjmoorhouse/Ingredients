@@ -91,11 +91,15 @@ def main():
     for c_target_ingredient in query_ingredients_list:
         graph_fname = c_target_ingredient[0:4]+"highcount.png"
         print("Drawing  graphand highlighting ingredient '{}'".format(c_target_ingredient))
+        # Demonstrates the use of the module function (enabled) or the
+        result = ind.draw_count_graph_with_highlighting(counts_df, c_target_ingredient, graph_fname)
+        # Enable this to use/develop the internal function:
+        # result = draw_count_graph_with_highlighting(counts_df, c_target_ingredient, graph_fname)
+        print("Result of plotting call: '{}'".format(result))
 
-        result = draw_count_graph_with_highlighting(counts_df, c_target_ingredient, graph_fname)
 
     """
-    So break here: loading routines above, graph below of the original 
+    So break here: loading routines above, graph plotting routine of the original function below 
     """
 
 
@@ -118,6 +122,9 @@ def draw_count_graph_with_highlighting(passed_df=None, hlight_ingredient=None, o
     3           3      Thiamin    353
     4           4  Wheat Flour    344
     """
+    import seaborn as sb
+    import matplotlib.pyplot as plt
+
     # If we are loading from FS then reseting column names and the index might be useful
     print("DCGwH: Starting: Ingredient\t'{}', FName: '{}'".format(hlight_ingredient, outfile_name))
     if 'Unnamed: 0' in passed_df.columns:
@@ -139,7 +146,7 @@ def draw_count_graph_with_highlighting(passed_df=None, hlight_ingredient=None, o
     if len(mega_data_df.loc[(mega_data_df['Product ID'] == c_id_value)]) == 0:
     """
     # Utterly fake this if we just want to test the top 'hits'
-    # query_ingredients_list = ['Salt']
+    # hlight_ingredient = ['Salt']
 
     print("Testing ingredient: '{}'".format(hlight_ingredient))
     ingredient_matches_df = ind.match_df_column(passed_df, 'Ingredient', hlight_ingredient)
@@ -187,9 +194,9 @@ def draw_count_graph_with_highlighting(passed_df=None, hlight_ingredient=None, o
     # plt.show(block=True)
     print("Saving graph as: '{}'".format(outfile_name))
     plt.savefig(outfile_name)
+    # Clear the plot and return success:
     plt.clf()
-    # sys.exit(0)
-
+    return 0
 
 if __name__ == '__main__':
     main()
