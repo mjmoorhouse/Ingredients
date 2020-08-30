@@ -131,6 +131,11 @@ def main():
             #The Ingredients search list:
             if config['DEFAULT'].get('Ingredients'):
                 query_ingredients_list = config['DEFAULT']['Ingredients'].split(",")
+            #The rank order file:
+            if config['DEFAULT']['RankedIngCountsFile']:
+                rankOrderFile = config['DEFAULT']['RankedIngCountsFile']
+            else:
+                rankOrderFile = "ingredients_rank_order.txt"
             #The outputfile tag:
             if config['DEFAULT'].get('OutputFileTag'):
                 search_tag = config['DEFAULT']['OutputFileTag']
@@ -150,7 +155,7 @@ def main():
         print ("Using internal ingredients list: '{}'".format(query_ingredients_list))
     print ("Using ingredients list and search tag: '{}' & '{}'".format(query_ingredients_list, search_tag))
 
-    # Read the data in:
+    # Read the Products data in (contains the ingredients linked to products):
     try:
         products_df = pd.read_csv(combined_matrix_fname, sep="\t", na_values="NaN")
     except:
@@ -159,7 +164,14 @@ def main():
         sys.exit(1)
     print ("Loaded {} products".format(len(products_df["index"])))
 
-
+    try:
+        counts_df = pd.read_csv(rankOrderFile, sep='\t')
+    except Exception as error_recvd:
+        print("ERROR: Cannot read the counts of ingredient ranks '{}'".format(rankOrderFile))
+        print(error_recvd)
+        sys.exit(1)
+    print ("rankOrderFile = '{}'".format(rankOrderFile))
+    # sys.exit(0)
     #print ("There are '{}' rows and columns in the 'matching_products' Data Frame".format(products_df.shape))
     #sys.exit(0)
     #Build the output filenames from the list of ingredients we are searching for:
@@ -389,6 +401,24 @@ def main():
         print ("Could not write out HTML table {} (ingredient counts)".format(counts_res_fname))
         sys.exit(1)
     print("All Done, Bye Bye")
+
+    """
+    The individual Ingredient frequency graphs:
+    """
+    for c_target_ingredient in query_ingredients_list:
+        # Use the first (up to) 7 characters of the ingredient name:
+        graph_fname = c_target_ingredient[0:6]+"highcount.png"
+        # This helps with various OSs:
+        graph_fname = graph_fname.replace(" ","_")
+
+        print("Drawing  graphand highlighting ingredient '{}' into file '{}'".format(c_target_ingredient, graph_fname))
+        # Make the graphing call:
+        result = ind.draw_count_graph_with_highlighting(counts_df, c_target_ingredient, graph_fname)
+        # Enable this to use/develop the internal function:
+        # result = draw_count_graph_with_highlighting(counts_df, c_target_ingredient, graph_fname)
+        print("Result of plotting call: '{}'".format(result))
+
+
     sys.exit(0)
 
 def increment_dict(tally_dict, level_1_key, level_2_key):
